@@ -1,0 +1,830 @@
+/* Basic Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    
+    /* Light Theme */
+    --bg-color-light: #ffffff;
+    --text-color-light: #333333;
+    --sidebar-bg-light: #f4f4f8;
+    --border-color-light: #e0e0e0;
+    --input-bg-light: #ffffff;
+    --input-border-light: #cccccc;
+    --message-user-bg-light: #e1f5fe;
+    --message-assistant-bg-light: #f0f0f0;
+    --btn-bg-light: #007bff;
+    --btn-text-light: #ffffff;
+    --btn-hover-bg-light: #0056b3;
+    --icon-color-light: #555555;
+    --modal-bg-light: rgba(0,0,0,0.4);
+    --modal-content-bg-light: #ffffff;
+    --code-bg-light: #f8f8f8;
+    --link-color-light: #007bff;
+
+    /* Dark Theme */
+    --bg-color-dark: #1e1e1e;
+    --text-color-dark: #e0e0e0;
+    --sidebar-bg-dark: #2a2a2e;
+    --border-color-dark: #444444;
+    --input-bg-dark: #3a3a3e;
+    --input-border-dark: #555555;
+    --message-user-bg-dark: #004c8c;
+    --message-assistant-bg-dark: #333333;
+    --btn-bg-dark: #007bff; /* Keep primary button color consistent or adjust */
+    --btn-text-dark: #ffffff;
+    --btn-hover-bg-dark: #0056b3;
+    --icon-color-dark: #bbbbbb;
+    --modal-bg-dark: rgba(0,0,0,0.7);
+    --modal-content-bg-dark: #2c2c2c;
+    --code-bg-dark: #282c34; /* Consistent with github-dark.min.css */
+    --link-color-dark: #60a5fa;
+
+    /* Default to Light Theme initially */
+    --current-bg-color: var(--bg-color-light);
+    --current-text-color: var(--text-color-light);
+    --current-sidebar-bg: var(--sidebar-bg-light);
+    --current-border-color: var(--border-color-light);
+    --current-input-bg: var(--input-bg-light);
+    --current-input-border: var(--input-border-light);
+    --current-message-user-bg: var(--message-user-bg-light);
+    --current-message-assistant-bg: var(--message-assistant-bg-light);
+    --current-btn-bg: var(--btn-bg-light);
+    --current-btn-text: var(--btn-text-light);
+    --current-btn-hover-bg: var(--btn-hover-bg-light);
+    --current-icon-color: var(--icon-color-light);
+    --current-modal-bg: var(--modal-bg-light);
+    --current-modal-content-bg: var(--modal-content-bg-light);
+    --current-code-bg: var(--code-bg-light);
+    --current-link-color: var(--link-color-light);
+
+    --sidebar-width: 280px;
+    --sidebar-width-collapsed: 60px; /* Width for collapsed icon-only sidebar */
+    --right-sidebar-width: 320px;
+}
+
+html.dark-theme {
+    --current-bg-color: var(--bg-color-dark);
+    --current-text-color: var(--text-color-dark);
+    --current-sidebar-bg: var(--sidebar-bg-dark);
+    --current-border-color: var(--border-color-dark);
+    --current-input-bg: var(--input-bg-dark);
+    --current-input-border: var(--input-border-dark);
+    --current-message-user-bg: var(--message-user-bg-dark);
+    --current-message-assistant-bg: var(--message-assistant-bg-dark);
+    /* --current-btn-bg: var(--btn-bg-dark); */ /* Keep primary button color consistent or adjust if needed */
+    /* --current-btn-text: var(--btn-text-dark); */
+    /* --current-btn-hover-bg: var(--btn-hover-bg-dark); */
+    --current-icon-color: var(--icon-color-dark);
+    --current-modal-bg: var(--modal-bg-dark);
+    --current-modal-content-bg: var(--modal-content-bg-dark);
+    --current-code-bg: var(--code-bg-dark);
+    --current-link-color: var(--link-color-dark);
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--current-bg-color);
+    color: var(--current-text-color);
+    line-height: 1.6;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.app-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    background-color: var(--current-sidebar-bg);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease, background-color 0.3s;
+    border-right: 1px solid var(--current-border-color); /* For left sidebar */
+}
+.left-sidebar {
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width); /* Prevent shrinking too much */
+}
+.left-sidebar.collapsed {
+    width: var(--sidebar-width-collapsed);
+    min-width: var(--sidebar-width-collapsed);
+}
+.left-sidebar.collapsed .sidebar-header .btn:not(#toggle-left-sidebar-btn),
+.left-sidebar.collapsed #chat-list-container h3,
+.left-sidebar.collapsed #chat-list li span,
+.left-sidebar.collapsed .sidebar-footer .btn:not(#settings-btn) span, /* if any text on other btns */
+.left-sidebar.collapsed #settings-btn span:last-child { /* Hide text part of settings button */
+    display: none;
+}
+.left-sidebar.collapsed .sidebar-header #new-chat-btn i,
+.left-sidebar.collapsed .sidebar-footer #settings-btn i {
+    margin-right: 0;
+}
+.left-sidebar.collapsed #chat-list li {
+    justify-content: center;
+}
+.left-sidebar.collapsed #chat-list li .chat-item-actions {
+    opacity: 0; /* Hide actions in collapsed mode for simplicity or redesign */
+}
+
+
+.right-sidebar {
+    width: var(--right-sidebar-width);
+    min-width: var(--right-sidebar-width);
+    border-left: 1px solid var(--current-border-color);
+}
+.right-sidebar.collapsed {
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    border-left: none;
+    overflow: hidden;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+.sidebar-header h3 {
+    margin: 0;
+}
+.right-sidebar .sidebar-header {
+    padding: 15px; /* Add padding back if content is visible */
+}
+
+#chat-list-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+#chat-list-container h3 {
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--current-text-color);
+    opacity: 0.7;
+}
+
+#chat-list, #settings-chat-list {
+    list-style: none;
+    padding: 0;
+}
+#chat-list li, #settings-chat-list li {
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+#chat-list li:hover {
+    background-color: rgba(0,0,0,0.1); /* Adjust based on theme */
+}
+html.dark-theme #chat-list li:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+#chat-list li.active-chat {
+    background-color: var(--current-btn-bg);
+    color: var(--current-btn-text);
+}
+#chat-list li .chat-item-title {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.chat-item-actions button {
+    background: none;
+    border: none;
+    color: var(--current-icon-color);
+    cursor: pointer;
+    padding: 5px;
+    opacity: 0.7;
+}
+.chat-item-actions button:hover {
+    opacity: 1;
+}
+#chat-list li.active-chat .chat-item-actions button {
+    color: var(--current-btn-text); /* Ensure visibility on active chat background */
+}
+
+.sidebar-footer {
+    margin-top: auto; /* Pushes to bottom */
+    flex-shrink: 0;
+}
+
+/* Main Content Area */
+#main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Important for scrolling message area */
+    background-color: var(--current-bg-color);
+}
+
+#chat-header {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--current-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+#chat-title-display {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+#chat-current-provider-model {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+
+#message-area-wrapper {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+#message-area {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.message {
+    padding: 10px 15px;
+    border-radius: 8px;
+    max-width: 85%;
+    word-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+}
+.message.user {
+    background-color: var(--current-message-user-bg);
+    align-self: flex-end;
+    margin-left: auto; /* Pushes to right */
+    color: var(--current-text-color); /* Ensure contrast */
+}
+html.dark-theme .message.user {
+    color: var(--text-color-dark); /* Or specific color for user text on dark user bubble */
+}
+.message.assistant {
+    background-color: var(--current-message-assistant-bg);
+    align-self: flex-start;
+}
+.message.error {
+    background-color: #ffebee; /* Light red */
+    color: #c62828; /* Dark red */
+    border: 1px solid #ef9a9a;
+}
+html.dark-theme .message.error {
+    background-color: #4a1c1c;
+    color: #ffcdd2;
+    border: 1px solid #803030;
+}
+.message.welcome-message {
+    background-color: var(--current-sidebar-bg); /* Or a neutral info color */
+    align-self: center;
+    text-align: center;
+    max-width: 60%;
+    opacity: 0.9;
+}
+
+.message .sender {
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-bottom: 5px;
+    opacity: 0.8;
+}
+.message .timestamp {
+    font-size: 0.75em;
+    opacity: 0.6;
+    margin-top: 8px;
+    text-align: right;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.thinking-block {
+    background-color: rgba(0,0,0,0.05);
+    border: 1px dashed var(--current-border-color);
+    padding: 5px;
+    margin-top: 5px;
+    border-radius: 4px;
+}
+.thinking-block summary {
+    cursor: pointer;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+
+/* Markdown and Code Styling */
+.message-content pre {
+    background-color: var(--current-code-bg);
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+    font-size: 0.9em;
+}
+.message-content code:not(pre code) { /* Inline code */
+    background-color: var(--current-code-bg);
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    border-radius: 3px;
+}
+.message-content blockquote {
+    border-left: 3px solid var(--current-border-color);
+    padding-left: 10px;
+    margin-left: 0;
+    font-style: italic;
+    color: var(--current-text-color);
+    opacity: 0.9;
+}
+.message-content table {
+    border-collapse: collapse;
+    margin: 10px 0;
+    width: auto;
+}
+.message-content th, .message-content td {
+    border: 1px solid var(--current-border-color);
+    padding: 6px 10px;
+}
+.message-content th {
+    background-color: var(--current-sidebar-bg); /* Light header for table */
+}
+.message-content a {
+    color: var(--current-link-color);
+    text-decoration: none;
+}
+.message-content a:hover {
+    text-decoration: underline;
+}
+
+.message-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+.message-actions button {
+    background: none;
+    border: 1px solid var(--current-border-color);
+    color: var(--current-icon-color);
+    padding: 4px 8px;
+    font-size: 0.8em;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.message-actions button:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+html.dark-theme .message-actions button:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+.message-actions .tech-info-popup {
+    position: absolute;
+    background-color: var(--current-sidebar-bg); /* Use a contrasting background */
+    color: var(--current-text-color);
+    border: 1px solid var(--current-border-color);
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    font-size: 0.85em;
+    z-index: 100;
+    white-space: pre; /* Keep formatting for tech info */
+    display: none; /* Hidden by default */
+}
+
+
+/* Message Input Area */
+#message-input-container {
+    padding: 10px 20px;
+    border-top: 1px solid var(--current-border-color);
+    background-color: var(--current-sidebar-bg); /* Slightly different background for input area */
+    flex-shrink: 0;
+}
+#model-selector-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+#model-selector-bar select {
+    flex-grow: 1;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid var(--current-input-border);
+    background-color: var(--current-input-bg);
+    color: var(--current-text-color);
+}
+
+#message-form {
+    display: flex;
+    align-items: flex-end; /* Align items to bottom for textarea expansion */
+    gap: 10px;
+}
+#message-input {
+    flex-grow: 1;
+    padding: 10px;
+    border-radius: 20px; /* Pill shape */
+    border: 1px solid var(--current-input-border);
+    background-color: var(--current-input-bg);
+    color: var(--current-text-color);
+    font-family: inherit;
+    font-size: 1em;
+    resize: none; /* Disable manual resize, JS will handle height */
+    max-height: 150px; /* Limit expansion */
+    overflow-y: auto;
+    line-height: 1.4;
+}
+#send-button {
+    background-color: var(--current-btn-bg);
+    color: white;
+    border: none;
+    border-radius: 50%; /* Circle */
+    width: 44px;
+    height: 44px;
+    font-size: 1.2em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+    flex-shrink: 0;
+}
+#send-button:hover {
+    background-color: var(--current-btn-hover-bg);
+}
+#send-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+#send-button.stop-button {
+    background-color: #dc3545; /* Red for stop */
+}
+#send-button.stop-button:hover {
+    background-color: #c82333;
+}
+#send-button.stop-button i::before {
+    content: "\f0c9"; /* Placeholder, change to square or cross, e.g. \f00d for times/cross */
+    font-family: "Font Awesome 6 Free"; /* Ensure FontAwesome is used */
+    font-weight: 900; /* For solid icons */
+}
+
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: var(--current-modal-bg);
+}
+.modal-content {
+    background-color: var(--current-modal-content-bg);
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid var(--current-border-color);
+    border-radius: 8px;
+    width: 80%;
+    max-width: 600px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+}
+.modal-content.large {
+    max-width: 900px;
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--current-border-color);
+    margin-bottom: 20px;
+}
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+}
+.modal-body {
+    flex-grow: 1;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.modal-footer {
+    padding-top: 10px;
+    border-top: 1px solid var(--current-border-color);
+    margin-top: 20px;
+    text-align: right;
+}
+
+/* Tabs in Modal */
+.tabs {
+    display: flex;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--current-border-color);
+}
+.tab-link {
+    padding: 10px 15px;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    color: var(--current-text-color);
+    opacity: 0.7;
+    border-bottom: 2px solid transparent; /* For active indicator */
+}
+.tab-link.active {
+    opacity: 1;
+    border-bottom-color: var(--current-btn-bg);
+    font-weight: bold;
+}
+.tab-link:hover {
+    opacity: 1;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+
+/* Form Group Styling */
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="url"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--current-input-border);
+    background-color: var(--current-input-bg);
+    color: var(--current-text-color);
+    font-size: 1em;
+}
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+.form-group input[type="range"] {
+    width: 100%;
+}
+.form-group small {
+    display: block;
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin-top: 5px;
+}
+#toggle-api-key-visibility {
+    margin-left: -35px; /* Position over input field */
+    padding: 6px;
+    vertical-align: middle;
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s;
+    background-color: var(--current-sidebar-bg); /* Default secondary button look */
+    color: var(--current-text-color);
+    border: 1px solid var(--current-border-color);
+}
+.btn:hover {
+    opacity: 0.8; /* Simple hover for secondary */
+}
+.btn.btn-primary {
+    background-color: var(--current-btn-bg);
+    color: var(--current-btn-text);
+    border-color: var(--current-btn-bg);
+}
+.btn.btn-primary:hover {
+    background-color: var(--current-btn-hover-bg);
+    opacity: 1;
+}
+.btn.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+.btn.btn-danger:hover {
+    background-color: #c82333;
+    opacity: 1;
+}
+.btn.icon-btn {
+    background: none;
+    border: none;
+    color: var(--current-icon-color);
+    padding: 8px;
+    font-size: 1.1em;
+}
+.btn.icon-btn:hover {
+    color: var(--current-text-color); /* Darken/lighten icon on hover */
+    opacity: 1;
+}
+.btn.icon-btn i {
+    margin-right: 5px;
+}
+.btn.icon-btn.close-modal-btn {
+    font-size: 1.3em;
+}
+.sidebar-header .icon-btn, .sidebar-footer .icon-btn {
+    width: 100%;
+    text-align: left;
+}
+.left-sidebar.collapsed .sidebar-header .icon-btn, 
+.left-sidebar.collapsed .sidebar-footer .icon-btn {
+    text-align: center;
+}
+.left-sidebar.collapsed .sidebar-header .icon-btn i, 
+.left-sidebar.collapsed .sidebar-footer .icon-btn i {
+    margin-right: 0;
+}
+
+/* Provider List Styling in Settings */
+#provider-list .provider-item {
+    padding: 10px;
+    border: 1px solid var(--current-border-color);
+    border-radius: 5px;
+    margin-bottom: 10px;
+    background-color: var(--current-bg-color); /* Slightly different from modal content bg */
+}
+.provider-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.provider-item-header h4 {
+    margin: 0;
+}
+.provider-actions button {
+    margin-left: 5px;
+}
+.api-key-display {
+    font-family: monospace;
+    font-size: 0.9em;
+    color: var(--current-text-color);
+    opacity: 0.7;
+}
+
+/* Model Management List Styling */
+#current-provider-models-list, #all-provider-models-list {
+    list-style: none;
+    padding: 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+#current-provider-models-list li, #all-provider-models-list li {
+    padding: 8px;
+    border-bottom: 1px solid var(--current-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#current-provider-models-list li:last-child, #all-provider-models-list li:last-child {
+    border-bottom: none;
+}
+.model-actions label {
+    margin-left: 10px;
+    font-weight: normal;
+    font-size: 0.9em;
+}
+.model-actions input[type="checkbox"] {
+    margin-right: 5px;
+    vertical-align: middle;
+}
+#models-comparison-info .new-model { color: #28a745; } /* Green */
+#models-comparison-info .removed-model { color: #dc3545; text-decoration: line-through; } /* Red */
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .left-sidebar {
+        position: absolute;
+        z-index: 100; /* Above main content when overlaying */
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        height: 100%;
+    }
+    .left-sidebar:not(.collapsed) { /* If expanded on mobile, make it full width or significant part */
+         width: var(--sidebar-width);
+    }
+    .left-sidebar.collapsed {
+        width: 0; /* Fully hide when "collapsed" on mobile, toggle button would un-collapse it */
+        min-width: 0;
+        padding: 0;
+        border: none;
+    }
+    #toggle-left-sidebar-btn { /* Ensure this is always visible on mobile */
+        position: fixed; /* Or adjust layout so it's accessible */
+        top: 10px;
+        left: 10px;
+        z-index: 101; /* Above sidebar if it's an overlay */
+        background: var(--current-sidebar-bg);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .left-sidebar.collapsed + #main-content {
+        margin-left: 0;
+    }
+    #main-content {
+        /* margin-left: var(--sidebar-width-collapsed); If we keep a small collapsed sidebar */
+        margin-left: 0; /* If fully hidden sidebar */
+    }
+
+    .right-sidebar {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        z-index: 99; /* Below left sidebar if both open as overlays */
+        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+    }
+    .right-sidebar.collapsed {
+        width: 0;
+    }
+     #main-content.right-sidebar-open {
+        margin-right: 0; /* If sidebar is overlay */
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+        max-height: 80vh;
+    }
+    #message-area-wrapper {
+        padding: 10px;
+    }
+    #message-input-container {
+        padding: 10px;
+    }
+    .message {
+        max-width: 95%;
+    }
+}
+
+/* Scrollbar Styling (Optional, Webkit specific) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--current-sidebar-bg);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--current-border-color);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--current-icon-color);
+}
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+.text-danger {
+    color: #dc3545;
+}
+.text-success {
+    color: #28a745;
+}
