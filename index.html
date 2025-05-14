@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrokChat</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-theme">
+    <meta name="theme-color" content="#007bff" />
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Sidebar -->
+        <aside id="left-sidebar" class="sidebar left-sidebar">
+            <div class="sidebar-header">
+                <button id="new-chat-btn" class="btn icon-btn" title="New Chat"><i class="fas fa-plus"></i> New Chat</button>
+                <button id="toggle-left-sidebar-btn" class="btn icon-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
+            </div>
+            <nav id="chat-list-container">
+                <h3>History</h3>
+                <ul id="chat-list">
+                    <!-- Chat items will be populated here -->
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="settings-btn" class="btn icon-btn" title="Settings"><i class="fas fa-cog"></i> Settings</button>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main id="main-content">
+            <header id="chat-header">
+                <span id="chat-title-display">GrokChat</span>
+                <div id="chat-model-display-container">
+                    <span id="chat-current-provider-model">No Model Selected</span>
+                </div>
+                <button id="toggle-right-sidebar-btn" class="btn icon-btn" title="Toggle Parameters"><i class="fas fa-sliders-h"></i></button>
+            </header>
+            <div id="message-area-wrapper">
+                <div id="message-area">
+                    <!-- Messages will appear here -->
+                     <div class="message welcome-message">
+                        <p>Welcome to GrokChat! Select a chat from the history or start a new one. Configure your AI providers in Settings.</p>
+                    </div>
+                </div>
+            </div>
+            <div id="message-input-container">
+                <div id="model-selector-bar">
+                     <select id="provider-selector-chat">
+                        <option value="">Select Provider</option>
+                    </select>
+                    <select id="model-selector-chat">
+                        <option value="">Select Model</option>
+                    </select>
+                </div>
+                <div id="image-preview-container">
+                    <!-- Image previews will go here -->
+                </div>
+                <form id="message-form">
+                    <button type="button" id="image-upload-button" class="btn icon-btn" title="Add Image" style="display: none;"><i class="fas fa-paperclip"></i></button>
+                    <input type="file" id="image-upload-input" accept="image/png, image/jpeg, image/gif, image/webp" multiple style="display: none;">
+                    <textarea id="message-input" placeholder="Type your message... (Shift+Enter for new line)" rows="1"></textarea>
+                    <button id="send-button" type="submit" title="Send Message"><i class="fas fa-paper-plane"></i></button>
+                </form>
+            </div>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside id="right-sidebar" class="sidebar right-sidebar collapsed">
+            <div class="sidebar-header">
+                <h3>Parameters</h3>
+                 <button id="close-right-sidebar-btn" class="btn icon-btn" title="Close Parameters"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="model-parameters">
+                <div class="form-group">
+                    <label for="system-prompt">System Prompt:</label>
+                    <textarea id="system-prompt" rows="4" placeholder="e.g., You are a helpful assistant."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="temperature">Temperature: <span id="temperature-value">0.7</span></label>
+                    <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                </div>
+                <div class="form-group">
+                    <label for="max-tokens">Max Tokens: <span id="max-tokens-value"></span></label>	
+                    <input type="number" id="max-tokens" min="0" value="" step="1024">
+                </div>
+                 <div class="form-group">
+                    <label for="top-p">Top P: <span id="top-p-value">1.0</span></label>
+                    <input type="range" id="top-p" min="0" max="1" step="0.01" value="1.0">
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="reasoning-effort-checkbox"> Reasoning Effort</label>
+                    <select id="reasoning-effort-select" disabled>
+                        <option value="none">None</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+		
+                <small><strong>Note:</strong> Parameter availability depends on the selected model and provider.</small>
+		<small>Blank value - model/provider default value used</small>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button id="close-settings-modal-btn" class="btn icon-btn close-modal-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <button class="tab-link active" data-tab="general-settings">General</button>
+                    <button class="tab-link" data-tab="providers-settings">Providers & Models</button>
+                    <button class="tab-link" data-tab="history-settings">History</button>
+                </div>
+
+                <div id="general-settings" class="tab-content active">
+                    <h3>General Settings</h3>
+                    <div class="form-group">
+                        <label for="theme-selector">Theme:</label>
+                        <select id="theme-selector">
+                            <option value="system">System Default</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="context-window-size">Context Window Size (messages): <span id="context-window-size-value">10</span></label>
+                        <input type="range" id="context-window-size" min="0" max="50" value="10">
+                        <small>0 means only current message is sent. Includes system prompt.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="copy-format-selector">Copy AI Message Format:</label>
+                        <select id="copy-format-selector">
+                            <option value="markdown">Markdown</option>
+                            <option value="plaintext">Plain Text</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="providers-settings" class="tab-content">
+                    <h3>Providers & Models</h3>
+                    <button id="add-provider-btn" class="btn"><i class="fas fa-plus"></i> Add Provider</button>
+                    <div id="provider-list">
+                        <!-- Provider items will be populated here -->
+                    </div>
+                </div>
+
+                <div id="history-settings" class="tab-content">
+                    <h3>History Management</h3>
+                    <p>Manage your chat history here.</p>
+                    <button id="export-history-btn" class="btn" title="Feature for future version"><i class="fas fa-download"></i> Export All History (Not Implemented)</button>
+                    <button id="clear-all-history-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Clear All History</button>
+                     <div id="settings-chat-list-container">
+                        <h4>Saved Chats:</h4>
+                        <ul id="settings-chat-list">
+                            <!-- Chat items for deletion will be populated here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-settings-btn" class="btn btn-primary">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Provider Modal -->
+    <div id="add-provider-modal" class="modal">
+        <div class="modal-content">
+             <div class="modal-header">
+                <h2 id="provider-modal-title">Add New Provider</h2>
+                <button class="btn icon-btn close-modal-btn" data-modal-id="add-provider-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-provider-id">
+                <div class="form-group">
+                    <label for="provider-name">Provider Name:</label>
+                    <input type="text" id="provider-name" placeholder="e.g., Groq, My Custom OpenAI">
+                </div>
+                <div class="form-group">
+                    <label for="provider-base-url">Base URL (OpenAI-compatible):</label>
+                    <input type="text" id="provider-base-url" placeholder="e.g., https://api.groq.com/openai/v1">
+                </div>
+                <div class="form-group">
+                    <label for="provider-api-key">API Key:</label>
+                    <input type="password" id="provider-api-key" placeholder="Enter your API key">
+                     <button type="button" id="toggle-api-key-visibility" class="btn icon-btn" title="Show/Hide API Key"><i class="fas fa-eye"></i></button>
+                </div>
+                 <small>API key is stored locally in your browser's localStorage. Be aware of the risks.</small>
+            </div>
+            <div class="modal-footer">
+                <button id="save-provider-btn" class="btn btn-primary">Save Provider</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Models Modal -->
+    <div id="manage-models-modal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2 id="manage-models-modal-title">Manage Models for Provider</h2>
+                <button class="btn icon-btn close-modal-btn" data-modal-id="manage-models-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="manage-models-provider-id">
+                <button id="update-models-list-btn" class="btn"><i class="fas fa-sync-alt"></i> Update Models List from Provider</button>
+                <p id="models-last-updated-status"></p>
+                <div id="model-management-area">
+                    <div class="tabs">
+                        <button class="tab-link active" data-tab="active-models-tab">Configured Models</button>
+                        <button class="tab-link" data-tab="available-models-tab">All Available Models</button>
+                    </div>
+                    <div id="active-models-tab" class="tab-content active">
+                        <h4>Currently Configured Models:</h4>
+                        <ul id="current-provider-models-list"></ul>
+                         <small>Mark models as "active" to appear in chat selection. Mark as "favorite" for quick access. Check "Images" if model supports vision.</small>
+                    </div>
+                    <div id="available-models-tab" class="tab-content">
+                        <h4>All Models from Provider (after update):</h4>
+                        <div id="models-comparison-info"></div>
+                        <ul id="all-provider-models-list"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-managed-models-btn" class="btn btn-primary">Save Model Configuration</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.7/marked.min.js"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
