@@ -15,6 +15,7 @@ A web application providing a user interface for interacting with various artifi
 
 ## Setup
 You have two options:
+
 **Clone from This GitHub repo**
 1.  **Clone/Download:** Get the project files.
 2.  **Serve Locally:** Use a simple HTTP server to run the `index.html` file.
@@ -22,7 +23,7 @@ You have two options:
     *   Or use VS Code Live Server extension.
 3.  **Access:** Open `http://localhost:8000` (or your server's address) in your browser.
 
-**Open ftom the site**
+**Open from the site**
 [http://grokchat.pages.dev/](http://grokchat.pages.dev/)
 
 4.  **Configure Providers:**
@@ -37,10 +38,10 @@ You have two options:
 
 ## Deployment
 
-The application is designed for static hosting platform
+The application is designed for static hosting platforms:
 
-*   Cloudflare Pages (done) 
-*   GitHub Pages (may be i nfuture)
+*   Cloudflare Pages (currently deployed) 
+*   GitHub Pages (planned for future implementation)
 
 ## Technology Stack
 
@@ -59,6 +60,6 @@ The application is designed for static hosting platform
 *   The application assumes OpenAI API compatibility for chat completions (`/v1/chat/completions`) and model listing (`/v1/models`).
 *   Basic Error handling is implemented, but can always be improved.
 *   Streaming responses are NOT implemented in this version.
-*   Present some issurs with formatting markdown in the chat.
-*   Present some issurs with layout on the some devices.
-*   
+*   There are some issues with formatting markdown in the chat.
+*   There are some issues with layout on certain devices.
+*   Contributions and bug reports are welcome via GitHub issues and pull requests.
