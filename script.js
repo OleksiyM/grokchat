@@ -540,12 +540,32 @@ const GrokChatApp = {
         finally { this.state.isRequestInProgress = false; this._toggleSendButtonState(false); this.state.currentAbortController = null; }
     },
 
+    // _buildContextMessages: async function(chatId, currentUserMessage) {
+    //     const context = [];
+    //     const systemPrompt = this.state.currentChatParams.systemPrompt;
+    //     if (systemPrompt) { context.push({ role: 'system', content: systemPrompt }); }
+    //     const contextWindowSize = this.state.settings.contextWindowSize;
+    //     if (chatId && contextWindowSize > 0) { const historyMessages = await this.getMessagesForChat(chatId); const recentMessages = historyMessages.filter(m => m.id !== currentUserMessage.id).slice(-contextWindowSize -1, -1); recentMessages.forEach(msg => { if (msg.role === 'user' || msg.role === 'assistant') { context.push({ role: msg.role, content: msg.content }); } }); }
+    //     context.push({ role: currentUserMessage.role, content: currentUserMessage.content });
+    //     return context;
+    // },
     _buildContextMessages: async function(chatId, currentUserMessage) {
         const context = [];
         const systemPrompt = this.state.currentChatParams.systemPrompt;
         if (systemPrompt) { context.push({ role: 'system', content: systemPrompt }); }
         const contextWindowSize = this.state.settings.contextWindowSize;
-        if (chatId && contextWindowSize > 0) { const historyMessages = await this.getMessagesForChat(chatId); const recentMessages = historyMessages.filter(m => m.id !== currentUserMessage.id).slice(-contextWindowSize -1, -1); recentMessages.forEach(msg => { if (msg.role === 'user' || msg.role === 'assistant') { context.push({ role: msg.role, content: msg.content }); } }); }
+        if (chatId && contextWindowSize > 0) { 
+            const historyMessages = await this.getMessagesForChat(chatId); 
+            // Fix: Don't exclude the last assistant message
+            const recentMessages = historyMessages
+                .filter(m => m.id !== currentUserMessage.id)
+                .slice(-contextWindowSize); 
+            recentMessages.forEach(msg => { 
+                if (msg.role === 'user' || msg.role === 'assistant') { 
+                    context.push({ role: msg.role, content: msg.content }); 
+                } 
+            }); 
+        }
         context.push({ role: currentUserMessage.role, content: currentUserMessage.content });
         return context;
     },

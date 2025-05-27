@@ -1,65 +1,146 @@
 # GrokChat
 
-A web application providing a user interface for interacting with various artificial intelligence models via their APIs. The application functions as a static site, is hosted on static hosting, and stores dialogue history locally in the user's browser using IndexedDB. Supports installation as a Progressive Web App (PWA).
+<div align="center">
+
+![GrokChat Logo](https://img.shields.io/badge/GrokChat-Web%20Client-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-0.1.1-orange)
+
+</div>
+
+A lightweight, browser-based chat interface for interacting with various AI providers through their OpenAI-compatible APIs. GrokChat offers a clean, intuitive interface with support for multiple AI providers, local storage of chat history, and customizable settings.
 
 ## Features
 
-*   Local-first: Chat history and settings stored in your browser.
-*   Multi-provider: Supports Groq, and other OpenAI-compatible APIs (xAI, Google Gemini via compatible endpoints, OpenRouter, custom).
-*   PWA: Installable for an app-like experience and basic offline access to the UI.
-*   Customizable: Manage providers, API keys, models, context window, themes.
-*   Markdown rendering with code syntax highlighting for AI responses.
-*   Message actions: Copy, Regenerate, Info (technical details).
-*   Request interruption.
-*   Responsive design.
+- **Multi-Provider Support**: Connect to various AI services including Groq, OpenAI, Anthropic, Mistral, xAI, DeepSeek, Novita, OpenRouter, and local Ollama instances
+- **Local-First Architecture**: All chat history and settings stored securely in your browser
+- **Progressive Web App (PWA)**: Installable for an app-like experience with basic offline access
+- **Customizable Experience**:
+  - Manage multiple providers and API keys
+  - Configure model-specific parameters
+  - Adjust context window size
+  - Choose between light, dark, or system theme
+- **Rich Content Rendering**:
+  - Markdown support with syntax highlighting for code blocks
+  - Support for AI thinking process visualization
+- **Conversation Management**:
+  - Create, rename, and delete chats
+  - Copy messages in markdown or plain text format
+  - Regenerate responses
+  - View technical details about responses
+- **Request Control**: Ability to interrupt ongoing requests
+- **Responsive Design**: Works on desktop and mobile devices
 
 ## Setup
-You have two options:
 
-**Clone from This GitHub repo**
-1.  **Clone/Download:** Get the project files.
-2.  **Serve Locally:** Use a simple HTTP server to run the `index.html` file.
-    *   Example using Python: `python -m http.server 8000` (or `python3 ...`)
-    *   Or use VS Code Live Server extension.
-3.  **Access:** Open `http://localhost:8000` (or your server's address) in your browser.
+You have two options to use GrokChat:
 
-**Open from the site**
-[http://grokchat.pages.dev/](http://grokchat.pages.dev/)
+### Option 1: Use the Hosted Version
 
-4.  **Configure Providers:**
-    *   Click the "⚙️ Settings" button.
-    *   Go to the "Providers & Models" tab.
-    *   Click "Add New Provider".
-    *   Enter a name (e.g., "Groq"), the Base URL (e.g., `https://api.groq.com/openai/v1`), and your API Key.
-        *   **Warning:** API keys are stored in your browser's `localStorage`. 
-    *   Save the provider.
-    *   Click "Manage Models" for the provider, then "Update Models List from Provider" to fetch available models. Select active/favorite models and save.
-5.  **Start Chatting!**
+Visit [http://grokchat.pages.dev/](http://grokchat.pages.dev/) to use the application without installation.
 
-## Deployment
+### Option 2: Run Locally
 
-The application is designed for static hosting platforms:
+1. **Clone/Download this Repository**:
+   ```bash
+   git clone https://github.com/OleksiyM/grokchat.git
+   cd grokchat
+   ```
 
-*   Cloudflare Pages (currently deployed) 
-*   GitHub Pages (planned for future implementation)
+2. **Serve Locally**: Use a simple HTTP server to run the application
+   - Using Python:
+     ```bash
+     python -m http.server 8000
+     # or
+     python3 -m http.server 8000
+     ```
+   - Or use VS Code's Live Server extension
+
+3. **Access the Application**: Open `http://localhost:8000` (or your server's address) in your browser
+
+## Usage Guide
+
+### Initial Configuration
+
+1. **Configure AI Providers**:
+   - Click the "⚙️ Settings" button in the bottom left
+   - Go to the "Providers & Models" tab
+   - Click "Add Provider"
+   - Enter provider details:
+     - Name (e.g., "Groq")
+     - Base URL (e.g., `https://api.groq.com/openai/v1`)
+     - Your API Key
+   - Save the provider
+
+2. **Set Up Models**:
+   - Click "Manage Models" for your provider
+   - Click "Update Models List from Provider" to fetch available models
+   - Select which models to make active/favorite
+   - Save your model configuration
+
+### Starting a Chat
+
+1. Click "+ New Chat" in the top left
+2. Select a provider and model from the dropdown menus at the bottom of the chat area
+3. Type your message and press Enter or click the send button
+
+### Customizing Chat Parameters
+
+Click the sliders icon (⚙️) in the top right to access chat parameters:
+- System Prompt
+- Temperature
+- Max Tokens
+- Top P
+- Reasoning Effort (for supported models)
+
+### Managing Chats
+
+- **Rename a Chat**: Click the pencil icon next to a chat in the sidebar
+- **Delete a Chat**: Click the trash icon next to a chat
+- **Clear All History**: Go to Settings > History tab > "Clear All History"
+
+## Security Note
+
+API keys are stored in your browser's `localStorage`. While this keeps your keys on your device, be aware of the security implications:
+
+- API keys are stored unencrypted
+- They persist between sessions
+- They could potentially be accessed by other scripts if there are security vulnerabilities
 
 ## Technology Stack
 
-*   HTML, CSS, JavaScript (Pure JS, ES Modules)
-*   IndexedDB (Chat History)
-*   localStorage (Settings)
-*   Fetch API (API Interaction)
-*   Service Worker & Web App Manifest (PWA)
-*   marked.js (Markdown to HTML)
-*   DOMPurify (HTML Sanitization)
-*   highlight.js (Syntax Highlighting)
+- **Frontend**: Pure JavaScript, HTML, CSS (no frameworks)
+- **Storage**:
+  - IndexedDB for chat history
+  - localStorage for settings
+- **API Communication**: Fetch API
+- **PWA Features**: Service Worker & Web App Manifest
+- **Libraries**:
+  - marked.js (Markdown rendering)
+  - DOMPurify (HTML sanitization)
+  - highlight.js (Code syntax highlighting)
 
 ## Development Notes
 
-*   Ensure your browser supports modern web standards (IndexedDB, Service Workers, ES Modules).
-*   The application assumes OpenAI API compatibility for chat completions (`/v1/chat/completions`) and model listing (`/v1/models`).
-*   Basic Error handling is implemented, but can always be improved.
-*   Streaming responses are NOT implemented in this version.
-*   There are some issues with formatting markdown in the chat.
-*   There are some issues with layout on certain devices.
-*   Contributions and bug reports are welcome via GitHub issues and pull requests.
+- The application requires a modern browser with support for IndexedDB, Service Workers, and ES Modules
+- OpenAI API compatibility is assumed for chat completions (`/v1/chat/completions`) and model listing (`/v1/models`)
+- Current limitations:
+  - Streaming responses are not implemented in this version
+  - Some formatting issues may occur with complex markdown
+  - Layout may have issues on certain devices
+
+## Contributing
+
+Contributions and bug reports are welcome via GitHub issues and pull requests.
+
+## License
+
+MIT License
+
+---
+
+<div align="center">
+
+**GrokChat** - A lightweight chat interface for AI models
+
+</div>
