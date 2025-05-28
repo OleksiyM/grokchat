@@ -2,9 +2,9 @@
 
 <div align="center">
 
-![GrokChat Logo](https://img.shields.io/badge/GrokChat-Web%20Client-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Version](https://img.shields.io/badge/version-0.1.1-orange)
+[![GrokChat Logo](https://img.shields.io/badge/GrokChat-Web%20Client-blue)](https://grokchat.pages.dev/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.1.2-orange)](CHANGELOG.md)
 
 </div>
 
