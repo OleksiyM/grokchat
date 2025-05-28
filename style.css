@@ -7,7 +7,7 @@
 
 :root {
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    
+
     /* Light Theme */
     --bg-color-light: #ffffff;
     --text-color-light: #333333;
@@ -21,7 +21,7 @@
     --btn-text-light: #ffffff;
     --btn-hover-bg-light: #0056b3;
     --icon-color-light: #555555;
-    --modal-bg-light: rgba(0,0,0,0.4);
+    --modal-bg-light: rgba(0, 0, 0, 0.4);
     --modal-content-bg-light: #ffffff;
     --code-bg-light: #f8f8f8;
     --link-color-light: #007bff;
@@ -35,13 +35,15 @@
     --input-border-dark: #555555;
     --message-user-bg-dark: #004c8c;
     --message-assistant-bg-dark: #333333;
-    --btn-bg-dark: #007bff; /* Keep primary button color consistent or adjust */
+    --btn-bg-dark: #007bff;
+    /* Keep primary button color consistent or adjust */
     --btn-text-dark: #ffffff;
     --btn-hover-bg-dark: #0056b3;
     --icon-color-dark: #bbbbbb;
-    --modal-bg-dark: rgba(0,0,0,0.7);
+    --modal-bg-dark: rgba(0, 0, 0, 0.7);
     --modal-content-bg-dark: #2c2c2c;
-    --code-bg-dark: #282c34; /* Consistent with github-dark.min.css */
+    --code-bg-dark: #282c34;
+    /* Consistent with github-dark.min.css */
     --link-color-dark: #60a5fa;
 
     /* Default to Light Theme initially */
@@ -63,7 +65,8 @@
     --current-link-color: var(--link-color-light);
 
     --sidebar-width: 280px;
-    --sidebar-width-collapsed: 60px; /* Width for collapsed icon-only sidebar */
+    --sidebar-width-collapsed: 60px;
+    /* Width for collapsed icon-only sidebar */
     --right-sidebar-width: 320px;
 }
 
@@ -76,7 +79,8 @@ html.dark-theme {
     --current-input-border: var(--input-border-dark);
     --current-message-user-bg: var(--message-user-bg-dark);
     --current-message-assistant-bg: var(--message-assistant-bg-dark);
-    /* --current-btn-bg: var(--btn-bg-dark); */ /* Keep primary button color consistent or adjust if needed */
+    /* --current-btn-bg: var(--btn-bg-dark); */
+    /* Keep primary button color consistent or adjust if needed */
     /* --current-btn-text: var(--btn-text-dark); */
     /* --current-btn-hover-bg: var(--btn-hover-bg-dark); */
     --current-icon-color: var(--icon-color-dark);
@@ -110,32 +114,60 @@ body {
     display: flex;
     flex-direction: column;
     transition: width 0.3s ease, background-color 0.3s;
-    border-right: 1px solid var(--current-border-color); /* For left sidebar */
+    border-right: 1px solid var(--current-border-color);
+    /* For left sidebar */
 }
+
 .left-sidebar {
     width: var(--sidebar-width);
-    min-width: var(--sidebar-width); /* Prevent shrinking too much */
+    min-width: var(--sidebar-width);
+    /* Prevent shrinking too much */
 }
+
 .left-sidebar.collapsed {
     width: var(--sidebar-width-collapsed);
     min-width: var(--sidebar-width-collapsed);
 }
-.left-sidebar.collapsed .sidebar-header .btn:not(#toggle-left-sidebar-btn),
-.left-sidebar.collapsed #chat-list-container h3,
-.left-sidebar.collapsed #chat-list li span,
-.left-sidebar.collapsed .sidebar-footer .btn:not(#settings-btn) span, /* if any text on other btns */
-.left-sidebar.collapsed #settings-btn span:last-child { /* Hide text part of settings button */
+
+/* Styles for elements inside collapsed left sidebar */
+.left-sidebar.collapsed .btn .btn-text { /* Hides text in buttons like "New Chat", "Settings" */
     display: none;
 }
-.left-sidebar.collapsed .sidebar-header #new-chat-btn i,
-.left-sidebar.collapsed .sidebar-footer #settings-btn i {
-    margin-right: 0;
+
+.left-sidebar.collapsed .btn i { /* Ensures icon has no extra margin when text is hidden */
+    margin-right: 0 !important; 
 }
-.left-sidebar.collapsed #chat-list li {
+
+.left-sidebar.collapsed .sidebar-header .btn,
+.left-sidebar.collapsed .sidebar-footer .btn {
+    /* Ensure buttons like New Chat and Settings center their icon */
+    /* These buttons are already width: 100% from general .sidebar-header .icon-btn rules */
+    /* text-align: center; is also set by .left-sidebar.collapsed .sidebar-header .icon-btn */
+    /* Padding might need adjustment if the icon isn't perfectly centered in the 60px space */
+    padding-left: 0;
+    padding-right: 0;
+    display: flex;
     justify-content: center;
+    align-items: center;
 }
+/* Keep toggle button specific centering if needed, usually text-align:center is enough for single icon */
+.left-sidebar.collapsed .sidebar-header #toggle-left-sidebar-btn {
+    /* Default centering usually works as it only contains an icon */
+}
+
+
+.left-sidebar.collapsed #chat-list-container h3,
+.left-sidebar.collapsed #chat-list li .chat-item-title { /* Target the title span directly */
+    display: none;
+}
+
 .left-sidebar.collapsed #chat-list li .chat-item-actions {
-    opacity: 0; /* Hide actions in collapsed mode for simplicity or redesign */
+    display: none; /* Or opacity: 0; visibility: hidden; */
+}
+
+.left-sidebar.collapsed #chat-list li {
+    justify-content: center; /* Center content if any (e.g., a future icon) */
+    padding: 10px 0; /* Adjust padding for aesthetic appeal when collapsed */
 }
 
 
@@ -144,6 +176,7 @@ body {
     min-width: var(--right-sidebar-width);
     border-left: 1px solid var(--current-border-color);
 }
+
 .right-sidebar.collapsed {
     width: 0;
     min-width: 0;
@@ -159,11 +192,14 @@ body {
     margin-bottom: 15px;
     flex-shrink: 0;
 }
+
 .sidebar-header h3 {
     margin: 0;
 }
+
 .right-sidebar .sidebar-header {
-    padding: 15px; /* Add padding back if content is visible */
+    padding: 15px;
+    /* Add padding back if content is visible */
 }
 
 #chat-list-container {
@@ -171,6 +207,7 @@ body {
     overflow-y: auto;
     margin-bottom: 15px;
 }
+
 #chat-list-container h3 {
     margin-bottom: 10px;
     font-size: 0.9em;
@@ -180,11 +217,14 @@ body {
     opacity: 0.7;
 }
 
-#chat-list, #settings-chat-list {
+#chat-list,
+#settings-chat-list {
     list-style: none;
     padding: 0;
 }
-#chat-list li, #settings-chat-list li {
+
+#chat-list li,
+#settings-chat-list li {
     padding: 10px;
     margin-bottom: 5px;
     border-radius: 5px;
@@ -194,22 +234,28 @@ body {
     align-items: center;
     transition: background-color 0.2s;
 }
+
 #chat-list li:hover {
-    background-color: rgba(0,0,0,0.1); /* Adjust based on theme */
+    background-color: rgba(0, 0, 0, 0.1);
+    /* Adjust based on theme */
 }
+
 html.dark-theme #chat-list li:hover {
-    background-color: rgba(255,255,255,0.1);
+    background-color: rgba(255, 255, 255, 0.1);
 }
+
 #chat-list li.active-chat {
     background-color: var(--current-btn-bg);
     color: var(--current-btn-text);
 }
+
 #chat-list li .chat-item-title {
     flex-grow: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
 .chat-item-actions button {
     background: none;
     border: none;
@@ -218,15 +264,19 @@ html.dark-theme #chat-list li:hover {
     padding: 5px;
     opacity: 0.7;
 }
+
 .chat-item-actions button:hover {
     opacity: 1;
 }
+
 #chat-list li.active-chat .chat-item-actions button {
-    color: var(--current-btn-text); /* Ensure visibility on active chat background */
+    color: var(--current-btn-text);
+    /* Ensure visibility on active chat background */
 }
 
 .sidebar-footer {
-    margin-top: auto; /* Pushes to bottom */
+    margin-top: auto;
+    /* Pushes to bottom */
     flex-shrink: 0;
 }
 
@@ -235,7 +285,8 @@ html.dark-theme #chat-list li:hover {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Important for scrolling message area */
+    overflow: hidden;
+    /* Important for scrolling message area */
     background-color: var(--current-bg-color);
 }
 
@@ -247,10 +298,12 @@ html.dark-theme #chat-list li:hover {
     align-items: center;
     flex-shrink: 0;
 }
+
 #chat-title-display {
     font-weight: bold;
     font-size: 1.1em;
 }
+
 #chat-current-provider-model {
     font-size: 0.9em;
     opacity: 0.8;
@@ -262,6 +315,7 @@ html.dark-theme #chat-list li:hover {
     overflow-y: auto;
     padding: 20px;
 }
+
 #message-area {
     display: flex;
     flex-direction: column;
@@ -276,31 +330,43 @@ html.dark-theme #chat-list li:hover {
     display: flex;
     flex-direction: column;
 }
+
 .message.user {
     background-color: var(--current-message-user-bg);
     align-self: flex-end;
-    margin-left: auto; /* Pushes to right */
-    color: var(--current-text-color); /* Ensure contrast */
+    margin-left: auto;
+    /* Pushes to right */
+    color: var(--current-text-color);
+    /* Ensure contrast */
 }
+
 html.dark-theme .message.user {
-    color: var(--text-color-dark); /* Or specific color for user text on dark user bubble */
+    color: var(--text-color-dark);
+    /* Or specific color for user text on dark user bubble */
 }
+
 .message.assistant {
     background-color: var(--current-message-assistant-bg);
     align-self: flex-start;
 }
+
 .message.error {
-    background-color: #ffebee; /* Light red */
-    color: #c62828; /* Dark red */
+    background-color: #ffebee;
+    /* Light red */
+    color: #c62828;
+    /* Dark red */
     border: 1px solid #ef9a9a;
 }
+
 html.dark-theme .message.error {
     background-color: #4a1c1c;
     color: #ffcdd2;
     border: 1px solid #803030;
 }
+
 .message.welcome-message {
-    background-color: var(--current-sidebar-bg); /* Or a neutral info color */
+    background-color: var(--current-sidebar-bg);
+    /* Or a neutral info color */
     align-self: center;
     text-align: center;
     max-width: 60%;
@@ -313,6 +379,7 @@ html.dark-theme .message.error {
     margin-bottom: 5px;
     opacity: 0.8;
 }
+
 .message .timestamp {
     font-size: 0.75em;
     opacity: 0.6;
@@ -325,12 +392,13 @@ html.dark-theme .message.error {
 }
 
 .thinking-block {
-    background-color: rgba(0,0,0,0.05);
+    background-color: rgba(0, 0, 0, 0.05);
     border: 1px dashed var(--current-border-color);
     padding: 5px;
     margin-top: 5px;
     border-radius: 4px;
 }
+
 .thinking-block summary {
     cursor: pointer;
     font-style: italic;
@@ -346,13 +414,16 @@ html.dark-theme .message.error {
     overflow-x: auto;
     font-size: 0.9em;
 }
-.message-content code:not(pre code) { /* Inline code */
+
+.message-content code:not(pre code) {
+    /* Inline code */
     background-color: var(--current-code-bg);
     padding: 0.2em 0.4em;
     margin: 0;
     font-size: 85%;
     border-radius: 3px;
 }
+
 .message-content blockquote {
     border-left: 3px solid var(--current-border-color);
     padding-left: 10px;
@@ -361,22 +432,29 @@ html.dark-theme .message.error {
     color: var(--current-text-color);
     opacity: 0.9;
 }
+
 .message-content table {
     border-collapse: collapse;
     margin: 10px 0;
     width: auto;
 }
-.message-content th, .message-content td {
+
+.message-content th,
+.message-content td {
     border: 1px solid var(--current-border-color);
     padding: 6px 10px;
 }
+
 .message-content th {
-    background-color: var(--current-sidebar-bg); /* Light header for table */
+    background-color: var(--current-sidebar-bg);
+    /* Light header for table */
 }
+
 .message-content a {
     color: var(--current-link-color);
     text-decoration: none;
 }
+
 .message-content a:hover {
     text-decoration: underline;
 }
@@ -385,7 +463,9 @@ html.dark-theme .message.error {
     margin-top: 8px;
     display: flex;
     gap: 8px;
+    align-items: center; /* Align buttons vertically */
 }
+
 .message-actions button {
     background: none;
     border: 1px solid var(--current-border-color);
@@ -394,25 +474,40 @@ html.dark-theme .message.error {
     font-size: 0.8em;
     border-radius: 4px;
     cursor: pointer;
+    display: inline-flex; /* Allow icon and text to align */
+    align-items: center;
 }
+
 .message-actions button:hover {
-    background-color: rgba(0,0,0,0.05);
+    background-color: rgba(0, 0, 0, 0.05);
 }
+
 html.dark-theme .message-actions button:hover {
-    background-color: rgba(255,255,255,0.1);
+    background-color: rgba(255, 255, 255, 0.1);
 }
+
+/* New class for the info button to act as a positioning context */
+.message-actions .info-button-container {
+    position: relative; 
+}
+
 .message-actions .tech-info-popup {
     position: absolute;
-    background-color: var(--current-sidebar-bg); /* Use a contrasting background */
+    bottom: calc(100% + 5px); /* Position 5px above the button */
+    left: 50%; 
+    transform: translateX(-50%); /* Center the popup horizontally relative to the button */
+    background-color: var(--current-modal-content-bg); /* Use modal content bg for better contrast */
     color: var(--current-text-color);
     border: 1px solid var(--current-border-color);
     padding: 10px;
     border-radius: 5px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
     font-size: 0.85em;
     z-index: 100;
-    white-space: pre; /* Keep formatting for tech info */
+    white-space: pre;
     display: none; /* Hidden by default */
+    min-width: 220px; /* Ensure it has some width */
+    text-align: left; /* Ensure content is left aligned */
 }
 
 
@@ -420,14 +515,17 @@ html.dark-theme .message-actions button:hover {
 #message-input-container {
     padding: 10px 20px;
     border-top: 1px solid var(--current-border-color);
-    background-color: var(--current-sidebar-bg); /* Slightly different background for input area */
+    background-color: var(--current-sidebar-bg);
+    /* Slightly different background for input area */
     flex-shrink: 0;
 }
+
 #model-selector-bar {
     display: flex;
     gap: 10px;
     margin-bottom: 10px;
 }
+
 #model-selector-bar select {
     flex-grow: 1;
     padding: 8px;
@@ -439,28 +537,35 @@ html.dark-theme .message-actions button:hover {
 
 #message-form {
     display: flex;
-    align-items: flex-end; /* Align items to bottom for textarea expansion */
+    align-items: flex-end;
+    /* Align items to bottom for textarea expansion */
     gap: 10px;
 }
+
 #message-input {
     flex-grow: 1;
     padding: 10px;
-    border-radius: 20px; /* Pill shape */
+    border-radius: 20px;
+    /* Pill shape */
     border: 1px solid var(--current-input-border);
     background-color: var(--current-input-bg);
     color: var(--current-text-color);
     font-family: inherit;
     font-size: 1em;
-    resize: none; /* Disable manual resize, JS will handle height */
-    max-height: 150px; /* Limit expansion */
+    resize: none;
+    /* Disable manual resize, JS will handle height */
+    max-height: 150px;
+    /* Limit expansion */
     overflow-y: auto;
     line-height: 1.4;
 }
+
 #send-button {
     background-color: var(--current-btn-bg);
     color: white;
     border: none;
-    border-radius: 50%; /* Circle */
+    border-radius: 50%;
+    /* Circle */
     width: 44px;
     height: 44px;
     font-size: 1.2em;
@@ -471,29 +576,39 @@ html.dark-theme .message-actions button:hover {
     transition: background-color 0.2s, transform 0.2s;
     flex-shrink: 0;
 }
+
 #send-button:hover {
     background-color: var(--current-btn-hover-bg);
 }
+
 #send-button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
 }
+
 #send-button.stop-button {
-    background-color: #dc3545; /* Red for stop */
+    background-color: #dc3545;
+    /* Red for stop */
 }
+
 #send-button.stop-button:hover {
     background-color: #c82333;
 }
+
 #send-button.stop-button i::before {
-    content: "\f0c9"; /* Placeholder, change to square or cross, e.g. \f00d for times/cross */
-    font-family: "Font Awesome 6 Free"; /* Ensure FontAwesome is used */
-    font-weight: 900; /* For solid icons */
+    content: "\f0c9";
+    /* Placeholder, change to square or cross, e.g. \f00d for times/cross */
+    font-family: "Font Awesome 6 Free";
+    /* Ensure FontAwesome is used */
+    font-weight: 900;
+    /* For solid icons */
 }
 
 
 /* Modal Styles */
 .modal {
-    display: none; /* Hidden by default */
+    display: none;
+    /* Hidden by default */
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -503,6 +618,7 @@ html.dark-theme .message-actions button:hover {
     overflow: auto;
     background-color: var(--current-modal-bg);
 }
+
 .modal-content {
     background-color: var(--current-modal-content-bg);
     margin: 10% auto;
@@ -511,13 +627,15 @@ html.dark-theme .message-actions button:hover {
     border-radius: 8px;
     width: 80%;
     max-width: 600px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
 }
+
 .modal-content.large {
     max-width: 900px;
 }
+
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -526,15 +644,18 @@ html.dark-theme .message-actions button:hover {
     border-bottom: 1px solid var(--current-border-color);
     margin-bottom: 20px;
 }
+
 .modal-header h2 {
     margin: 0;
     font-size: 1.5em;
 }
+
 .modal-body {
     flex-grow: 1;
     max-height: 60vh;
     overflow-y: auto;
 }
+
 .modal-footer {
     padding-top: 10px;
     border-top: 1px solid var(--current-border-color);
@@ -548,6 +669,7 @@ html.dark-theme .message-actions button:hover {
     margin-bottom: 15px;
     border-bottom: 1px solid var(--current-border-color);
 }
+
 .tab-link {
     padding: 10px 15px;
     cursor: pointer;
@@ -555,19 +677,24 @@ html.dark-theme .message-actions button:hover {
     background-color: transparent;
     color: var(--current-text-color);
     opacity: 0.7;
-    border-bottom: 2px solid transparent; /* For active indicator */
+    border-bottom: 2px solid transparent;
+    /* For active indicator */
 }
+
 .tab-link.active {
     opacity: 1;
     border-bottom-color: var(--current-btn-bg);
     font-weight: bold;
 }
+
 .tab-link:hover {
     opacity: 1;
 }
+
 .tab-content {
     display: none;
 }
+
 .tab-content.active {
     display: block;
 }
@@ -576,11 +703,13 @@ html.dark-theme .message-actions button:hover {
 .form-group {
     margin-bottom: 15px;
 }
+
 .form-group label {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
 }
+
 .form-group input[type="text"],
 .form-group input[type="password"],
 .form-group input[type="url"],
@@ -595,21 +724,26 @@ html.dark-theme .message-actions button:hover {
     color: var(--current-text-color);
     font-size: 1em;
 }
+
 .form-group textarea {
     min-height: 80px;
     resize: vertical;
 }
+
 .form-group input[type="range"] {
     width: 100%;
 }
+
 .form-group small {
     display: block;
     font-size: 0.85em;
     opacity: 0.7;
     margin-top: 5px;
 }
+
 #toggle-api-key-visibility {
-    margin-left: -35px; /* Position over input field */
+    margin-left: -35px;
+    /* Position over input field */
     padding: 6px;
     vertical-align: middle;
 }
@@ -622,31 +756,42 @@ html.dark-theme .message-actions button:hover {
     cursor: pointer;
     font-size: 1em;
     transition: background-color 0.2s;
-    background-color: var(--current-sidebar-bg); /* Default secondary button look */
+    background-color: var(--current-sidebar-bg);
+    /* Default secondary button look */
     color: var(--current-text-color);
     border: 1px solid var(--current-border-color);
+    display: inline-flex; /* Helps align icon and text */
+    align-items: center;
+    justify-content: center; /* Center content for icon-only buttons */
 }
+
 .btn:hover {
-    opacity: 0.8; /* Simple hover for secondary */
+    opacity: 0.8;
+    /* Simple hover for secondary */
 }
+
 .btn.btn-primary {
     background-color: var(--current-btn-bg);
     color: var(--current-btn-text);
     border-color: var(--current-btn-bg);
 }
+
 .btn.btn-primary:hover {
     background-color: var(--current-btn-hover-bg);
     opacity: 1;
 }
+
 .btn.btn-danger {
     background-color: #dc3545;
     color: white;
     border-color: #dc3545;
 }
+
 .btn.btn-danger:hover {
     background-color: #c82333;
     opacity: 1;
 }
+
 .btn.icon-btn {
     background: none;
     border: none;
@@ -654,28 +799,44 @@ html.dark-theme .message-actions button:hover {
     padding: 8px;
     font-size: 1.1em;
 }
+
 .btn.icon-btn:hover {
-    color: var(--current-text-color); /* Darken/lighten icon on hover */
+    color: var(--current-text-color);
+    /* Darken/lighten icon on hover */
     opacity: 1;
 }
+
 .btn.icon-btn i {
     margin-right: 5px;
 }
+.btn.icon-btn i + .btn-text { /* Add space between icon and text if btn-text follows an icon */
+    margin-left: 5px;
+}
+
+
 .btn.icon-btn.close-modal-btn {
     font-size: 1.3em;
 }
-.sidebar-header .icon-btn, .sidebar-footer .icon-btn {
+
+.sidebar-header .icon-btn,
+.sidebar-footer .icon-btn {
     width: 100%;
-    text-align: left;
+    justify-content: flex-start; /* Align icon and text to the left */
 }
-.left-sidebar.collapsed .sidebar-header .icon-btn, 
+
+.left-sidebar.collapsed .sidebar-header .icon-btn,
 .left-sidebar.collapsed .sidebar-footer .icon-btn {
-    text-align: center;
+    justify-content: center; /* Center icon when collapsed */
 }
-.left-sidebar.collapsed .sidebar-header .icon-btn i, 
+
+.left-sidebar.collapsed .sidebar-header .icon-btn i,
 .left-sidebar.collapsed .sidebar-footer .icon-btn i {
-    margin-right: 0;
+    margin-right: 0; /* Ensure no margin when collapsed and text is hidden */
 }
+.left-sidebar.collapsed .btn.icon-btn i + .btn-text { /* No margin if text hidden */
+    margin-left: 0;
+}
+
 
 /* Provider List Styling in Settings */
 #provider-list .provider-item {
@@ -683,20 +844,25 @@ html.dark-theme .message-actions button:hover {
     border: 1px solid var(--current-border-color);
     border-radius: 5px;
     margin-bottom: 10px;
-    background-color: var(--current-bg-color); /* Slightly different from modal content bg */
+    background-color: var(--current-bg-color);
+    /* Slightly different from modal content bg */
 }
+
 .provider-item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
 }
+
 .provider-item-header h4 {
     margin: 0;
 }
+
 .provider-actions button {
     margin-left: 5px;
 }
+
 .api-key-display {
     font-family: monospace;
     font-size: 0.9em;
@@ -705,70 +871,99 @@ html.dark-theme .message-actions button:hover {
 }
 
 /* Model Management List Styling */
-#current-provider-models-list, #all-provider-models-list {
+#current-provider-models-list,
+#all-provider-models-list {
     list-style: none;
     padding: 0;
     max-height: 300px;
     overflow-y: auto;
 }
-#current-provider-models-list li, #all-provider-models-list li {
+
+#current-provider-models-list li,
+#all-provider-models-list li {
     padding: 8px;
     border-bottom: 1px solid var(--current-border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
-#current-provider-models-list li:last-child, #all-provider-models-list li:last-child {
+
+#current-provider-models-list li:last-child,
+#all-provider-models-list li:last-child {
     border-bottom: none;
 }
+
 .model-actions label {
     margin-left: 10px;
     font-weight: normal;
     font-size: 0.9em;
 }
+
 .model-actions input[type="checkbox"] {
     margin-right: 5px;
     vertical-align: middle;
 }
-#models-comparison-info .new-model { color: #28a745; } /* Green */
-#models-comparison-info .removed-model { color: #dc3545; text-decoration: line-through; } /* Red */
+
+#models-comparison-info .new-model {
+    color: #28a745;
+}
+
+/* Green */
+#models-comparison-info .removed-model {
+    color: #dc3545;
+    text-decoration: line-through;
+}
+
+/* Red */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .left-sidebar {
         position: absolute;
-        z-index: 100; /* Above main content when overlaying */
-        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        z-index: 100;
+        /* Above main content when overlaying */
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
         height: 100%;
     }
-    .left-sidebar:not(.collapsed) { /* If expanded on mobile, make it full width or significant part */
-         width: var(--sidebar-width);
+
+    .left-sidebar:not(.collapsed) {
+        /* If expanded on mobile, make it full width or significant part */
+        width: var(--sidebar-width);
     }
+
     .left-sidebar.collapsed {
-        width: 0; /* Fully hide when "collapsed" on mobile, toggle button would un-collapse it */
+        width: 0;
+        /* Fully hide when "collapsed" on mobile, toggle button would un-collapse it */
         min-width: 0;
         padding: 0;
         border: none;
+        overflow: hidden; /* Important to hide contents fully */
     }
-    #toggle-left-sidebar-btn { /* Ensure this is always visible on mobile */
-        position: fixed; /* Or adjust layout so it's accessible */
-        top: 10px;
-        left: 10px;
-        z-index: 101; /* Above sidebar if it's an overlay */
-        background: var(--current-sidebar-bg);
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+
+    #toggle-left-sidebar-btn {
+        /* This button is inside .left-sidebar .sidebar-header */
+        /* When sidebar is collapsed (width:0, overflow:hidden), this button is also hidden unless taken out of flow */
+        /* The JS likely handles visibility or moves this button. If fixed, ensure it's outside the overflow:hidden parent or manage via JS */
+        /* Assuming JS handles this button to be accessible for toggling. Current fixed positioning from JS would lift it out. */
+         position: fixed; /* This takes it out of the parent's flow and overflow:hidden */
+         top: 10px;
+         left: 10px;
+         z-index: 101; /* Above sidebar if it's an overlay */
+         background: var(--current-sidebar-bg);
+         border-radius: 50%;
+         width: 40px;
+         height: 40px;
+         /* display: flex; align-items: center; justify-content: center; is already on .btn */
     }
-    .left-sidebar.collapsed + #main-content {
-        margin-left: 0;
+    .left-sidebar.collapsed #toggle-left-sidebar-btn { /* ensure the fixed button is still using its fixed props */
+        padding: 8px; /* Re-apply if .left-sidebar.collapsed .sidebar-header .btn overwrites it too much */
     }
+
+
     #main-content {
         /* margin-left: var(--sidebar-width-collapsed); If we keep a small collapsed sidebar */
-        margin-left: 0; /* If fully hidden sidebar */
+        margin-left: 0;
+        /* If fully hidden sidebar */
     }
 
     .right-sidebar {
@@ -776,14 +971,19 @@ html.dark-theme .message-actions button:hover {
         right: 0;
         top: 0;
         height: 100%;
-        z-index: 99; /* Below left sidebar if both open as overlays */
-        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+        z-index: 99;
+        /* Below left sidebar if both open as overlays */
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
     }
+
     .right-sidebar.collapsed {
         width: 0;
+        overflow: hidden; /* Added for safety */
     }
-     #main-content.right-sidebar-open {
-        margin-right: 0; /* If sidebar is overlay */
+
+    #main-content.right-sidebar-open {
+        margin-right: 0;
+        /* If sidebar is overlay */
     }
 
     .modal-content {
@@ -791,12 +991,15 @@ html.dark-theme .message-actions button:hover {
         margin: 5% auto;
         max-height: 80vh;
     }
+
     #message-area-wrapper {
         padding: 10px;
     }
+
     #message-input-container {
         padding: 10px;
     }
+
     .message {
         max-width: 95%;
     }
@@ -807,13 +1010,16 @@ html.dark-theme .message-actions button:hover {
     width: 8px;
     height: 8px;
 }
+
 ::-webkit-scrollbar-track {
     background: var(--current-sidebar-bg);
 }
+
 ::-webkit-scrollbar-thumb {
     background: var(--current-border-color);
     border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: var(--current-icon-color);
 }
@@ -822,9 +1028,11 @@ html.dark-theme .message-actions button:hover {
 .hidden {
     display: none !important;
 }
+
 .text-danger {
     color: #dc3545;
 }
+
 .text-success {
     color: #28a745;
 }
