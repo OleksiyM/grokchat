@@ -1,4 +1,4 @@
-const CACHE_NAME = 'grokchat-cache-v0.1.1';
+const CACHE_NAME = 'grokchat-cache-v0.1.2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -32,9 +32,9 @@ self.addEventListener('fetch', event => {
         }
         return fetch(event.request).then(
           // Try to cache new requests dynamically
-          function(response) {
+          function (response) {
             // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic' && response.type !== 'cors') {
+            if (!response || response.status !== 200 || response.type !== 'basic' && response.type !== 'cors') {
               return response;
             }
 
@@ -46,11 +46,11 @@ self.addEventListener('fetch', event => {
 
             // Don't cache API calls
             if (event.request.url.includes('/v1/chat/completions') || event.request.url.includes('/v1/models')) {
-                return response;
+              return response;
             }
 
             caches.open(CACHE_NAME)
-              .then(function(cache) {
+              .then(function (cache) {
                 cache.put(event.request, responseToCache);
               });
 
