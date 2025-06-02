@@ -1,7 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [0.1.2] - Current Version
+## [0.1.3] - Current Version
+
+- Implemented system prompt management and selection feature
+  - Save, edit, and delete multiple system prompts in settings
+  - Select prompts from dropdown in chat window
+- Fixed various bugs related to prompt handling
+- Updated version number in README.md
+
+## [0.1.2]
 
 - Implemented support for streaming responses
 - Improved Regenerate button functionality
@@ -24,6 +32,7 @@ All notable changes to this project will be documented in this file.
   - Configure model-specific parameters
   - Adjust context window size
   - Choose between light, dark, or system theme
+  - Save and manage multiple system prompts
 - **Rich Content Rendering**:
   - Markdown support with syntax highlighting for code blocks
   - Support for AI thinking process visualization
