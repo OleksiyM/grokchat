@@ -1036,3 +1036,52 @@ html.dark-theme .message-actions button:hover {
 .text-success {
     color: #28a745;
 }
+
+/* System Prompts Management Styles */
+#system-prompts-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin-bottom: 15px;
+}
+
+.system-prompt-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--current-border-color);
+    border-radius: 5px;
+    margin-bottom: 8px;
+    background-color: var(--current-bg-color);
+}
+
+.system-prompt-item .prompt-name {
+    flex-grow: 1;
+    margin-right: 10px; /* Space between name and actions */
+    font-weight: 500;
+}
+
+.system-prompt-item .prompt-actions button {
+    margin-left: 8px;
+    padding: 5px 10px; /* Smaller padding for sm buttons */
+    font-size: 0.9em;
+}
+
+/* Styling for the form to add/edit system prompts */
+#system-prompt-edit-form {
+    padding: 15px;
+    border: 1px solid var(--current-border-color);
+    border-radius: 5px;
+    background-color: var(--current-sidebar-bg); /* Slightly different bg like input area */
+}
+
+#system-prompt-edit-form .form-group {
+    margin-bottom: 15px;
+}
+
+#system-prompt-edit-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}

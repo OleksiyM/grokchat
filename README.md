@@ -4,7 +4,7 @@
 
 [![GrokChat Logo](https://img.shields.io/badge/GrokChat-Web%20Client-blue)](https://grokchat.pages.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.2-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.1.3-orange)](CHANGELOG.md)
 
 </div>
 
@@ -20,6 +20,7 @@ A lightweight, browser-based chat interface for interacting with various AI prov
   - Configure model-specific parameters
   - Adjust context window size
   - Choose between light, dark, or system theme
+  - Save and manage multiple system prompts with dropdown selection
 - **Rich Content Rendering**:
   - Markdown support with syntax highlighting for code blocks
   - Support for AI thinking process visualization
@@ -87,11 +88,17 @@ Visit [http://grokchat.pages.dev/](http://grokchat.pages.dev/) to use the applic
 ### Customizing Chat Parameters
 
 Click the sliders icon (⚙️) in the top right to access chat parameters:
-- System Prompt
+- System Prompt (select from saved prompts or create new ones)
 - Temperature
 - Max Tokens
 - Top P
 - Reasoning Effort (for supported models)
+
+To manage system prompts:
+1. Go to Settings > System Prompts
+2. Click "Add New Prompt"
+3. Give it a name and enter your prompt text
+4. Save to make it available in the chat dropdown
 
 ### Managing Chats
 

@@ -88,6 +88,13 @@
             </div>
             <div id="model-parameters">
                 <div class="form-group">
+                    <label for="saved-system-prompts-dropdown">Select Saved Prompt:</label>
+                    <select id="saved-system-prompts-dropdown">
+                        <option value="">-- Select a saved prompt --</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="system-prompt">System Prompt:</label>
                     <textarea id="system-prompt" rows="4" placeholder="e.g., You are a helpful assistant."></textarea>
                 </div>
@@ -131,6 +138,7 @@
                 <div class="tabs">
                     <button class="tab-link active" data-tab="general-settings">General</button>
                     <button class="tab-link" data-tab="providers-settings">Providers & Models</button>
+                    <button class="tab-link" data-tab="system-prompts-settings">System Prompts</button>
                     <button class="tab-link" data-tab="history-settings">History</button>
                     <button class="tab-link" data-tab="about-settings">About</button>
                 </div>
@@ -168,6 +176,28 @@
                     </div>
                 </div>
 
+                <div id="system-prompts-settings" class="tab-content">
+                    <h3>System Prompts Management</h3>
+                    <button id="add-new-prompt-btn" class="btn"><i class="fas fa-plus"></i> Add New Prompt</button>
+                    <ul id="system-prompts-list">
+                        <!-- System prompts will be listed here -->
+                    </ul>
+                    <form id="system-prompt-edit-form" style="display: none; margin-top: 15px;">
+                        <div class="form-group">
+                            <label for="system-prompt-name">Prompt Name (Max 50 chars):</label>
+                            <input type="text" id="system-prompt-name" maxlength="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="system-prompt-text">Prompt Text (Markdown/Plain):</label>
+                            <textarea id="system-prompt-text" rows="5"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" id="save-system-prompt-btn" class="btn btn-primary">Save Prompt</button>
+                            <button type="button" id="cancel-edit-system-prompt-btn" class="btn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
                 <div id="history-settings" class="tab-content">
                     <h3>History Management</h3>
                     <p>Manage your chat history here.</p>
@@ -187,7 +217,7 @@
                     <h3>About GrokChat</h3>
                     <p>GrokChat is an open-source project. You can find the source code and contribute on <a
                             href="http://github.com/OleksiyM/grokchat" target="_blank">GitHub</a>.</p>
-                    <p>Version: 0.1.2</p>
+                    <p>Version: 0.1.3</p>
                 </div>
 
             </div>
