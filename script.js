@@ -20,7 +20,10 @@ const GrokChatApp = {
             ],
             selectedProviderId: null,
             selectedModelId: null,
-            lastOpenedChatId: null
+            lastOpenedChatId: null,
+            systemPrompts: [
+                { name: 'Default Prompt', text: 'You are a helpful assistant.' }
+            ]
         },
         defaultChatParams: {
             systemPrompt: '',
@@ -102,6 +105,7 @@ const GrokChatApp = {
         loggedLibraryStatus: false,
         isSendingMessage: false, // Guards against rapid re-entry into handleSendMessage
         currentStreamingResponseMessage: '', // Accumulates AI response during streaming
+        editingSystemPromptName: null, // To track system prompt being edited
     },
 
     init: async function () {
@@ -192,6 +196,17 @@ const GrokChatApp = {
         this.dom.modelsComparisonInfo = document.getElementById('models-comparison-info');
         this.dom.tabLinks = document.querySelectorAll('.tabs .tab-link');
         this.state.hljsThemeLinkTag = document.getElementById('hljs-theme');
+
+        // System Prompts UI
+        this.dom.addNewPromptBtn = document.getElementById('add-new-prompt-btn');
+        this.dom.systemPromptsList = document.getElementById('system-prompts-list');
+        this.dom.systemPromptEditForm = document.getElementById('system-prompt-edit-form');
+        this.dom.systemPromptNameInput = document.getElementById('system-prompt-name');
+        this.dom.systemPromptTextInput = document.getElementById('system-prompt-text');
+        this.dom.saveSystemPromptBtn = document.getElementById('save-system-prompt-btn');
+        this.dom.cancelEditSystemPromptBtn = document.getElementById('cancel-edit-system-prompt-btn');
+        this.dom.systemPromptsSettingsTab = document.querySelector('.tab-link[data-tab="system-prompts-settings"]');
+        this.dom.savedSystemPromptsDropdown = document.getElementById('saved-system-prompts-dropdown');
     },
 
     _registerServiceWorker: function () {
@@ -211,11 +226,17 @@ const GrokChatApp = {
                 ...p,
                 models: p.models || {},
             }));
+            // Ensure systemPrompts are initialized
+            if (!this.state.settings.systemPrompts || !Array.isArray(this.state.settings.systemPrompts) || this.state.settings.systemPrompts.length === 0) {
+                this.state.settings.systemPrompts = [...this.config.defaultSettings.systemPrompts];
+            }
         } else {
             this.state.settings = { ...this.config.defaultSettings };
             this.state.settings.providers = this.state.settings.providers.map(p => ({
                 ...p, id: this._generateUUID()
             }));
+            // Ensure systemPrompts are initialized for new settings
+            this.state.settings.systemPrompts = [...this.config.defaultSettings.systemPrompts];
         }
         console.log("Settings loaded:", this.state.settings);
     },
@@ -339,6 +360,16 @@ const GrokChatApp = {
                 this._saveCurrentChatParams();
             }
         });
+
+        // System Prompt UI Listeners
+        if (this.dom.addNewPromptBtn) this.dom.addNewPromptBtn.addEventListener('click', () => this._handleAddNewSystemPrompt());
+        if (this.dom.saveSystemPromptBtn) this.dom.saveSystemPromptBtn.addEventListener('click', (e) => { e.preventDefault(); this._handleSaveSystemPrompt(); });
+        if (this.dom.cancelEditSystemPromptBtn) this.dom.cancelEditSystemPromptBtn.addEventListener('click', () => {
+            this.dom.systemPromptEditForm.style.display = 'none';
+            this.state.editingSystemPromptName = null;
+        });
+        if (this.dom.savedSystemPromptsDropdown) this.dom.savedSystemPromptsDropdown.addEventListener('change', (e) => this._handleSavedPromptSelection(e));
+
     },
 
     renderChatList: async function () {
@@ -521,6 +552,7 @@ const GrokChatApp = {
         this.dom.temperatureInput.value = this.state.currentChatParams.temperature !== undefined ? this.state.currentChatParams.temperature : this.config.defaultChatParams.temperature; this.dom.temperatureValue.textContent = this.dom.temperatureInput.value;
         this.dom.maxTokensInput.value = this.state.currentChatParams.max_tokens || this.config.defaultChatParams.max_tokens; this.dom.maxTokensValue.textContent = this.dom.maxTokensInput.value;
         this.dom.topPInput.value = this.state.currentChatParams.top_p !== undefined ? this.state.currentChatParams.top_p : this.config.defaultChatParams.top_p; this.dom.topPValue.textContent = this.dom.topPInput.value;
+        this._populateSystemPromptDropdown();
     },
 
     loadInitialChat: async function () {
@@ -890,10 +922,124 @@ const GrokChatApp = {
     },
 
     _openSettingsModal: async function () { this._populateSettingsForm(); await this._populateSettingsHistoryList(); this.dom.settingsModal.style.display = 'flex'; },
-    _populateSettingsForm: function () { this.dom.themeSelector.value = this.state.settings.theme; this.dom.contextWindowSizeInput.value = this.state.settings.contextWindowSize; this.dom.contextWindowSizeValue.textContent = this.state.settings.contextWindowSize; this.dom.copyFormatSelector.value = this.state.settings.copyFormat; this._renderProviderListForSettings(); },
+    _populateSettingsForm: function () { this.dom.themeSelector.value = this.state.settings.theme; this.dom.contextWindowSizeInput.value = this.state.settings.contextWindowSize; this.dom.contextWindowSizeValue.textContent = this.state.settings.contextWindowSize; this.dom.copyFormatSelector.value = this.state.settings.copyFormat; this._renderProviderListForSettings(); this._renderSystemPromptsList(); },
     _collectSettingsFromForm: function () { this.state.settings.theme = this.dom.themeSelector.value; this.state.settings.contextWindowSize = parseInt(this.dom.contextWindowSizeInput.value); this.state.settings.copyFormat = this.dom.copyFormatSelector.value; },
     async _populateSettingsHistoryList() { if (!this.state.db) { this.dom.settingsChatList.innerHTML = '<li>DB not available.</li>'; return; } const chats = await this.getAllChats(); this.dom.settingsChatList.innerHTML = ''; if (chats.length === 0) { this.dom.settingsChatList.innerHTML = '<li>No chats.</li>'; } else { chats.sort((a, b) => b.updated_at - a.updated_at).forEach(chat => { const li = document.createElement('li'); li.innerHTML = `<span>${chat.title || `Chat ${chat.id}`} (Updated: ${this._formatTimestamp(chat.updated_at)})</span>`; const deleteBtn = document.createElement('button'); deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete'; deleteBtn.classList.add('btn', 'btn-danger', 'btn-sm'); deleteBtn.style.marginLeft = '10px'; deleteBtn.onclick = () => this.handleDeleteChat(chat.id, true); li.appendChild(deleteBtn); this.dom.settingsChatList.appendChild(li); }); } },
     _renderProviderListForSettings: function () { this.dom.providerList.innerHTML = ''; if (this.state.settings.providers.length === 0) { this.dom.providerList.innerHTML = '<p>No providers. Add one!</p>'; return; } this.state.settings.providers.forEach(provider => { const itemDiv = document.createElement('div'); itemDiv.classList.add('provider-item'); itemDiv.innerHTML = `<div class="provider-item-header"><h4>${provider.name}</h4><div class="provider-actions"><button class="btn btn-sm" data-provider-id="${provider.id}" data-action="manage-models"><i class="fas fa-list-ul"></i> Manage Models</button><button class="btn btn-sm" data-provider-id="${provider.id}" data-action="edit-provider"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-sm btn-danger" data-provider-id="${provider.id}" data-action="delete-provider"><i class="fas fa-trash-alt"></i> Delete</button></div></div><p><small>Base URL: ${provider.baseUrl}</small></p><p><small>API Key: <span class="api-key-display">${provider.apiKey ? '********' + provider.apiKey.slice(-4) : 'Not Set'}</span></small></p>`; this.dom.providerList.appendChild(itemDiv); }); this.dom.providerList.querySelectorAll('.provider-actions button').forEach(button => { button.addEventListener('click', (e) => { const providerId = e.currentTarget.dataset.providerId; const action = e.currentTarget.dataset.action; if (action === 'edit-provider') this._openAddProviderModal(providerId); else if (action === 'delete-provider') this.handleDeleteProvider(providerId); else if (action === 'manage-models') this._openManageModelsModal(providerId); }); }); },
+    
+    // System Prompt Management Methods
+    _renderSystemPromptsList: function() {
+        if (!this.dom.systemPromptsList) return;
+        this.dom.systemPromptsList.innerHTML = '';
+        if (!this.state.settings.systemPrompts || this.state.settings.systemPrompts.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = 'No custom system prompts defined. Add one!';
+            li.style.textAlign = 'center';
+            li.style.opacity = '0.7';
+            this.dom.systemPromptsList.appendChild(li);
+            return;
+        }
+
+        this.state.settings.systemPrompts.forEach(prompt => {
+            const li = document.createElement('li');
+            li.classList.add('system-prompt-item');
+
+            const nameSpan = document.createElement('span');
+            nameSpan.classList.add('prompt-name');
+            nameSpan.textContent = prompt.name;
+            li.appendChild(nameSpan);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.classList.add('prompt-actions');
+
+            const editBtn = document.createElement('button');
+            editBtn.classList.add('btn', 'btn-sm', 'edit-prompt-btn');
+            editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+            editBtn.addEventListener('click', () => this._handleEditSystemPrompt(prompt.name));
+            actionsDiv.appendChild(editBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.classList.add('btn', 'btn-sm', 'btn-danger', 'delete-prompt-btn');
+            deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+            deleteBtn.addEventListener('click', () => this._handleDeleteSystemPrompt(prompt.name));
+            actionsDiv.appendChild(deleteBtn);
+
+            li.appendChild(actionsDiv);
+            this.dom.systemPromptsList.appendChild(li);
+        });
+    },
+
+    _handleAddNewSystemPrompt: function() {
+        this.state.editingSystemPromptName = null;
+        this.dom.systemPromptNameInput.value = '';
+        this.dom.systemPromptTextInput.value = '';
+        this.dom.systemPromptNameInput.disabled = false;
+        this.dom.systemPromptEditForm.style.display = 'block';
+        this.dom.systemPromptNameInput.focus();
+    },
+
+    _handleEditSystemPrompt: function(promptName) {
+        const prompt = this.state.settings.systemPrompts.find(p => p.name === promptName);
+        if (prompt) {
+            this.state.editingSystemPromptName = prompt.name;
+            this.dom.systemPromptNameInput.value = prompt.name;
+            this.dom.systemPromptTextInput.value = prompt.text;
+            this.dom.systemPromptNameInput.disabled = true; // Disable name editing
+            this.dom.systemPromptEditForm.style.display = 'block';
+            this.dom.systemPromptTextInput.focus();
+        }
+    },
+
+    _handleSaveSystemPrompt: function() {
+        const name = this.dom.systemPromptNameInput.value.trim();
+        const text = this.dom.systemPromptTextInput.value.trim();
+
+        if (!name) {
+            this._showError('Prompt name cannot be empty.');
+            return;
+        }
+        // maxlength attribute on input should prevent this, but good to double check
+        if (name.length > 50) { 
+            this._showError('Prompt name exceeds 50 characters.');
+            return;
+        }
+
+        if (this.state.editingSystemPromptName === null) { // Adding new prompt
+            if (this.state.settings.systemPrompts.some(p => p.name === name)) {
+                this._showError('A prompt with this name already exists.');
+                return;
+            }
+            this.state.settings.systemPrompts.push({ name, text });
+        } else { // Editing existing prompt
+            const prompt = this.state.settings.systemPrompts.find(p => p.name === this.state.editingSystemPromptName);
+            if (prompt) {
+                prompt.text = text; // Name is not changed as input is disabled
+            }
+        }
+
+        this.saveSettings();
+        this._renderSystemPromptsList();
+        this.dom.systemPromptEditForm.style.display = 'none';
+        this.state.editingSystemPromptName = null;
+        this._showToast('System prompt saved.');
+    },
+
+    _handleDeleteSystemPrompt: function(promptName) {
+        if (!confirm(`Are you sure you want to delete the prompt "${promptName}"?`)) {
+            return;
+        }
+        this.state.settings.systemPrompts = this.state.settings.systemPrompts.filter(p => p.name !== promptName);
+        this.saveSettings();
+        this._renderSystemPromptsList();
+
+        if (this.state.editingSystemPromptName === promptName) {
+            this.dom.systemPromptEditForm.style.display = 'none';
+            this.state.editingSystemPromptName = null;
+        }
+        this._showToast('System prompt deleted.');
+    },
+    // End System Prompt Management Methods
+    
     _openAddProviderModal: function (providerIdToEdit = null) { this.dom.addProviderModal.style.display = 'flex'; if (providerIdToEdit) { const provider = this.state.settings.providers.find(p => p.id === providerIdToEdit); if (provider) { this.dom.providerModalTitle.textContent = 'Edit Provider'; this.dom.editProviderIdInput.value = provider.id; this.dom.providerNameInput.value = provider.name; this.dom.providerBaseUrlInput.value = provider.baseUrl; this.dom.providerApiKeyInput.value = provider.apiKey; this.dom.providerApiKeyInput.type = 'password'; this.dom.toggleApiKeyVisibilityBtn.querySelector('i').className = 'fas fa-eye'; } } else { this.dom.providerModalTitle.textContent = 'Add New Provider'; this.dom.editProviderIdInput.value = ''; this.dom.providerNameInput.value = ''; this.dom.providerBaseUrlInput.value = ''; this.dom.providerApiKeyInput.value = ''; this.dom.providerApiKeyInput.type = 'password'; this.dom.toggleApiKeyVisibilityBtn.querySelector('i').className = 'fas fa-eye'; } },
     handleSaveProvider: function () { const id = this.dom.editProviderIdInput.value; const name = this.dom.providerNameInput.value.trim(); const baseUrl = this.dom.providerBaseUrlInput.value.trim(); const apiKey = this.dom.providerApiKeyInput.value; if (!name || !baseUrl) { this._showError("Name and Base URL required."); return; } try { new URL(baseUrl); } catch (_) { this._showError("Invalid Base URL."); return; } if (id) { const providerIndex = this.state.settings.providers.findIndex(p => p.id === id); if (providerIndex > -1) { this.state.settings.providers[providerIndex] = { ...this.state.settings.providers[providerIndex], name, baseUrl, apiKey }; } } else { this.state.settings.providers.push({ id: this._generateUUID(), name, baseUrl, apiKey, models: {}, lastUpdatedModels: null }); } this.saveSettings(); this._renderProviderListForSettings(); this._closeModal(this.dom.addProviderModal); this._showToast(`Provider ${id ? 'updated' : 'added'}.`); },
     handleDeleteProvider: function (providerId) { if (!confirm("Delete provider?")) return; this.state.settings.providers = this.state.settings.providers.filter(p => p.id !== providerId); if (this.state.settings.selectedProviderId === providerId) { this.state.settings.selectedProviderId = null; this.state.settings.selectedModelId = null; } this.saveSettings(); this._renderProviderListForSettings(); this._showToast("Provider deleted."); },
