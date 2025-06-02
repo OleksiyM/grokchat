@@ -299,8 +299,12 @@ const GrokChatApp = {
         });
         this.dom.toggleRightSidebarBtn.addEventListener('click', () => {
             this.dom.rightSidebar.classList.toggle('collapsed');
-            this.dom.mainContent.classList.toggle('right-sidebar-open', !this.dom.rightSidebar.classList.contains('collapsed'));
+            const isOpen = !this.dom.rightSidebar.classList.contains('collapsed');
+            this.dom.mainContent.classList.toggle('right-sidebar-open', isOpen);
             this.state.isRightSidebarManuallyToggled = true;
+            if (isOpen) {
+                this._populateSystemPromptDropdown();
+            }
         });
         this.dom.closeRightSidebarBtn.addEventListener('click', () => {
             this.dom.rightSidebar.classList.add('collapsed');
