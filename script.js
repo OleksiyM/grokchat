@@ -303,7 +303,7 @@ const GrokChatApp = {
             this.dom.mainContent.classList.toggle('right-sidebar-open', isOpen);
             this.state.isRightSidebarManuallyToggled = true;
             if (isOpen) {
-                this._populateSystemPromptDropdown();
+                setTimeout(() => { this._populateSystemPromptDropdown(); }, 0);
             }
         });
         this.dom.closeRightSidebarBtn.addEventListener('click', () => {
