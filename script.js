@@ -75,21 +75,6 @@ const GrokChatApp = {
         tabLinks: null,
     },
 
-    // state: {
-    //     db: null,
-    //     settings: {},
-    //     currentChatId: null,
-    //     currentChatParams: {}, 
-    //     isRequestInProgress: false,
-    //     currentAbortController: null,
-    //     isLeftSidebarManuallyToggled: false, 
-    //     isRightSidebarManuallyToggled: false,
-    //     hljsThemeLight: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css',
-    //     hljsThemeDark: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css',
-    //     hljsThemeLinkTag: null,
-    //     loggedLibraryStatus: false, 
-    // },
-    // GrokChatApp.state
     state: {
         db: null,
         settings: {},
@@ -285,27 +270,41 @@ const GrokChatApp = {
         const mediaQuery = window.matchMedia('(max-width: 768px)');
         const handleMediaQueryChange = (mq) => {
             if (mq.matches) {
-                if (!this.state.isLeftSidebarManuallyToggled) this.dom.leftSidebar.classList.add('collapsed');
-                if (!this.state.isRightSidebarManuallyToggled) this.dom.rightSidebar.classList.add('collapsed');
+                if (!this.state.isLeftSidebarManuallyToggled) {
+                    this.dom.leftSidebar.classList.add('collapsed');
+                }
+                if (!this.state.isRightSidebarManuallyToggled) {
+                    this.dom.rightSidebar.classList.add('collapsed');
+                    this.dom.mainContent.classList.remove('right-sidebar-open'); // Ensure main content adjusts
+                }
             } else {
-                if (!this.state.isLeftSidebarManuallyToggled) this.dom.leftSidebar.classList.remove('collapsed');
+                if (!this.state.isLeftSidebarManuallyToggled) {
+                    this.dom.leftSidebar.classList.remove('collapsed');
+                }
+                this.dom.mainContent.classList.toggle('right-sidebar-open', !this.dom.rightSidebar.classList.contains('collapsed'));
             }
         };
+    
         mediaQuery.addEventListener('change', handleMediaQueryChange);
-        handleMediaQueryChange(mediaQuery);
+        handleMediaQueryChange(mediaQuery); // Initial check
+    
         this.dom.toggleLeftSidebarBtn.addEventListener('click', () => {
             this.dom.leftSidebar.classList.toggle('collapsed');
-            this.state.isLeftSidebarManuallyToggled = true;
+            this.state.isLeftSidebarManuallyToggled = true; 
         });
+    
         this.dom.toggleRightSidebarBtn.addEventListener('click', () => {
             this.dom.rightSidebar.classList.toggle('collapsed');
-            const isOpen = !this.dom.rightSidebar.classList.contains('collapsed');
-            this.dom.mainContent.classList.toggle('right-sidebar-open', isOpen);
+            this.dom.mainContent.classList.toggle('right-sidebar-open', !this.dom.rightSidebar.classList.contains('collapsed'));
             this.state.isRightSidebarManuallyToggled = true;
-            if (isOpen) {
-                setTimeout(() => { this._populateSystemPromptDropdown(); }, 0);
+    
+            if (!this.dom.rightSidebar.classList.contains('collapsed')) {
+                setTimeout(() => {
+                    this._populateSystemPromptDropdown();
+                }, 0);
             }
         });
+    
         this.dom.closeRightSidebarBtn.addEventListener('click', () => {
             this.dom.rightSidebar.classList.add('collapsed');
             this.dom.mainContent.classList.remove('right-sidebar-open');
@@ -1024,8 +1023,10 @@ const GrokChatApp = {
         this.saveSettings();
         this._renderSystemPromptsList();
         this.dom.systemPromptEditForm.style.display = 'none';
+        // this.dom.systemPromptEditForm.style.display = 'none'; // Redundant line (removed in this version)
         this.state.editingSystemPromptName = null;
         this._showToast('System prompt saved.');
+        this._populateSystemPromptDropdown(); // Also update dropdown after saving a prompt
     },
 
     _handleDeleteSystemPrompt: function(promptName) {
@@ -1035,12 +1036,89 @@ const GrokChatApp = {
         this.state.settings.systemPrompts = this.state.settings.systemPrompts.filter(p => p.name !== promptName);
         this.saveSettings();
         this._renderSystemPromptsList();
+        this._populateSystemPromptDropdown(); // Update dropdown after deleting
 
         if (this.state.editingSystemPromptName === promptName) {
             this.dom.systemPromptEditForm.style.display = 'none';
             this.state.editingSystemPromptName = null;
         }
         this._showToast('System prompt deleted.');
+    },
+
+    _populateSystemPromptDropdown: function () {
+        console.log("GrokChatApp: _populateSystemPromptDropdown called"); 
+        try {
+            const currentSystemPromptText = this.dom.systemPromptInput.value;
+            let promptTextMatched = false;
+    
+            // Ensure the dropdown element exists
+            if (!this.dom.savedSystemPromptsDropdown) {
+                console.error("GrokChatApp: savedSystemPromptsDropdown DOM element not found!");
+                return;
+            }
+    
+            this.dom.savedSystemPromptsDropdown.innerHTML = '<option value="">-- Select a saved prompt --</option>';
+            
+            if (this.state.settings && this.state.settings.systemPrompts) {
+                console.log("GrokChatApp: System prompts found in state:", JSON.stringify(this.state.settings.systemPrompts)); 
+                
+                if (this.state.settings.systemPrompts.length === 0) {
+                    console.log("GrokChatApp: systemPrompts array is empty."); 
+                }
+    
+                this.state.settings.systemPrompts.forEach(prompt => {
+                    if (!prompt || typeof prompt.name === 'undefined') {
+                        console.warn("GrokChatApp: Skipping invalid prompt object during dropdown population:", JSON.stringify(prompt));
+                        return; // Skip this iteration if prompt or prompt.name is invalid
+                    }
+                    console.log("GrokChatApp: Processing prompt for dropdown:", prompt.name); 
+                    const option = document.createElement('option');
+                    option.value = prompt.name;
+                    option.textContent = prompt.name;
+                    this.dom.savedSystemPromptsDropdown.appendChild(option);
+                    
+                    if (prompt.text === currentSystemPromptText) {
+                        option.selected = true;
+                        promptTextMatched = true;
+                    }
+                });
+                console.log("GrokChatApp: Finished processing prompts for dropdown. Total options added:", this.state.settings.systemPrompts.filter(p => p && typeof p.name !== 'undefined').length); 
+            } else {
+                console.log("GrokChatApp: No systemPrompts found in this.state.settings or settings object itself is undefined/null."); 
+            }
+    
+            // Default selection logic
+            if (!promptTextMatched) {
+                this.dom.savedSystemPromptsDropdown.value = ""; 
+            }
+            console.log("GrokChatApp: _populateSystemPromptDropdown finished. Current dropdown value:", this.dom.savedSystemPromptsDropdown.value);
+        } catch (error) {
+            console.error("GrokChatApp: Error caught in _populateSystemPromptDropdown:", error); 
+        }
+    },
+
+    _handleSavedPromptSelection: function(event) {
+        const selectedPromptName = event.target.value;
+        if (!selectedPromptName) {
+            // Optionally clear the textarea if "-- Select --" is chosen
+            // this.dom.systemPromptInput.value = ""; 
+            // this.state.currentChatParams.systemPrompt = "";
+            // if (this.state.currentChatId) this._saveCurrentChatParams();
+            return;
+        }
+
+        const selectedPrompt = this.state.settings.systemPrompts.find(p => p.name === selectedPromptName);
+        if (selectedPrompt) {
+            this.dom.systemPromptInput.value = selectedPrompt.text;
+            this.state.currentChatParams.systemPrompt = selectedPrompt.text;
+            if (this.state.currentChatId) {
+                this._saveCurrentChatParams();
+            }
+        }
+        // Do not reset event.target.value = ""; here if we want the dropdown to reflect the current selection
+        // Resetting it makes it a "select to apply" rather than a state holder.
+        // For now, let it reflect the selection. If user types manually, dropdown will be out of sync.
+        // The _populateSystemPromptDropdown will re-sync it if it finds a match.
     },
     // End System Prompt Management Methods
     
