@@ -12,6 +12,7 @@ A lightweight, browser-based chat interface for interacting with various AI prov
 
 ## Features
 
+- **Quick Export Access**: Export current chat directly from header with one click
 - **Multi-Provider Support**: Connect to various AI services including Groq, OpenAI, Anthropic, Mistral, xAI, DeepSeek, Novita, OpenRouter, and local Ollama instances
 - **Local-First Architecture**: All chat history and settings stored securely in your browser
 - **Progressive Web App (PWA)**: Installable for an app-like experience with basic offline access
