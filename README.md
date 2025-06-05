@@ -12,7 +12,7 @@ A lightweight, browser-based chat interface for interacting with various AI prov
 
 ## Features
 
-- **Quick Export Access**: Export current chat directly from header with one click
+- **Quick Export Access**: Export current chat directly from header with one click or from the History tab in Settings
 - **Multi-Provider Support**: Connect to various AI services including Groq, OpenAI, Anthropic, Mistral, xAI, DeepSeek, Novita, OpenRouter, and local Ollama instances
 - **Local-First Architecture**: All chat history and settings stored securely in your browser
 - **Progressive Web App (PWA)**: Installable for an app-like experience with basic offline access
@@ -106,6 +106,23 @@ To manage system prompts:
 - **Rename a Chat**: Click the pencil icon next to a chat in the sidebar
 - **Delete a Chat**: Click the trash icon next to a chat
 - **Clear All History**: Go to Settings > History tab > "Clear All History"
+- **Export Chat**: Go to Settings > History tab > "Export Chat"
+
+### Advanced Features
+- **Regenerate Response**: Click the regenerate icon next to a message
+- **Copy Message**: Click the copy icon next to a message. Format options can be set in the Settings -> General:
+  - Markdown
+  - Plain Text
+- **Information about Response**: Mouse hover over the info icon next to a message. You will see the technical details of the response.
+```text
+Provider: <Provider name>
+Model: <model name>
+Duration: <mumber in seconds>
+Prompt Tokens: <number>
+Completion Tokens: <number>
+Total Tokens: <number>
+Speed (tokens/sec): <number>
+```
 
 ## Security Note
 
