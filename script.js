@@ -565,7 +565,48 @@ const GrokChatApp = {
             }
         } else {
             if (canRenderFormatted) {
-                contentDiv.innerHTML = window.DOMPurify.sanitize(window.marked.parse(rawContent));
+                // Commenting out previous temporary logging
+                // const testPattern1 = "🤖 **[Test Emoji Bold]**";
+                // console.log("Testing pattern:", testPattern1);
+                // console.log("Marked output for pattern 1:", window.marked.parse(testPattern1));
+
+                // const testPattern2 = "💡 **[Test Lightbulb Bold]**";
+                // console.log("Testing pattern:", testPattern2);
+                // console.log("Marked output for pattern 2:", window.marked.parse(testPattern2));
+
+                // const testPattern3 = "**[Test Normal Bold]**"; // Control group
+                // console.log("Testing pattern:", testPattern3);
+                // console.log("Marked output for pattern 3:", window.marked.parse(testPattern3));
+
+                let processedContent = rawContent;
+
+                // Preprocessing for specific emoji + bold patterns
+                const emojiFixes = [
+                    {
+                        name: "robot",
+                        regex: /(🤖\s*)\*\*(.*?)\*\*/g,
+                        replacement: "$1<strong>$2</strong>"
+                    },
+                    {
+                        name: "lightbulb",
+                        regex: /(💡\s*)\*\*(.*?)\*\*/g,
+                        replacement: "$1<strong>$2</strong>"
+                    }
+                    // Add other emojis here if needed
+                ];
+
+                emojiFixes.forEach(fix => {
+                    processedContent = processedContent.replace(fix.regex, fix.replacement);
+                });
+
+                console.log("Content after preprocessing for emoji-bold fix:", processedContent);
+
+                console.log("Raw content for marked.parse (should be same as above if no other changes):", rawContent); // Kept for comparison for now
+                const markedOutput = window.marked.parse(processedContent); // Use processedContent
+                console.log("HTML output from marked.parse (after emoji fix):", markedOutput);
+                const sanitizedHtml = window.DOMPurify.sanitize(markedOutput);
+                console.log("HTML output after DOMPurify.sanitize (after emoji fix):", sanitizedHtml);
+                contentDiv.innerHTML = sanitizedHtml;
             } else {
                 contentDiv.textContent = rawContent;
             }
