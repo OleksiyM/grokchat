@@ -309,6 +309,14 @@ html.dark-theme #chat-list li:hover {
     opacity: 0.8;
 }
 
+#chat-header #header-export-chat-btn {
+    margin-right: 0px; /* Remove or set to 0 */
+}
+
+#chat-header #toggle-right-sidebar-btn {
+    margin-left: 4px; /* Adjust this value as needed for desired closeness */
+}
+
 
 #message-area-wrapper {
     flex-grow: 1;
@@ -1084,4 +1092,16 @@ html.dark-theme .message-actions button:hover {
     justify-content: flex-end;
     gap: 10px;
     margin-top: 15px;
+}
+
+/* Export History Styles */
+#history-settings .form-group {
+    margin-bottom: 15px; /* Add some space below the dropdown group */
+}
+
+#export-current-chat-btn {
+    margin-top: 10px; /* Add some space above the button */
+    /* Assuming .btn class handles most styling. Full width if needed: */
+    /* width: 100%; */
+    /* box-sizing: border-box; */
 }
