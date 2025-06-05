@@ -73,6 +73,9 @@ const GrokChatApp = {
         modelsComparisonInfo: null,
 
         tabLinks: null,
+        exportChatFormatSelect: null,
+        exportCurrentChatBtn: null,
+        headerExportChatBtn: null,
     },
 
     state: {
@@ -192,6 +195,9 @@ const GrokChatApp = {
         this.dom.cancelEditSystemPromptBtn = document.getElementById('cancel-edit-system-prompt-btn');
         this.dom.systemPromptsSettingsTab = document.querySelector('.tab-link[data-tab="system-prompts-settings"]');
         this.dom.savedSystemPromptsDropdown = document.getElementById('saved-system-prompts-dropdown');
+        this.dom.exportChatFormatSelect = document.getElementById('export-chat-format');
+        this.dom.exportCurrentChatBtn = document.getElementById('export-current-chat-btn');
+        this.dom.headerExportChatBtn = document.getElementById('header-export-chat-btn');
     },
 
     _registerServiceWorker: function () {
@@ -372,7 +378,104 @@ const GrokChatApp = {
             this.state.editingSystemPromptName = null;
         });
         if (this.dom.savedSystemPromptsDropdown) this.dom.savedSystemPromptsDropdown.addEventListener('change', (e) => this._handleSavedPromptSelection(e));
+        if (this.dom.exportCurrentChatBtn) this.dom.exportCurrentChatBtn.addEventListener('click', () => this.handleExportChat());
+        if (this.dom.headerExportChatBtn) {
+            this.dom.headerExportChatBtn.addEventListener('click', () => {
+                if (!this.state.currentChatId) {
+                    this._showError("No active chat selected to export.");
+                    return;
+                }
+                this.handleExportChat();
+            });
+        }
+    },
 
+    handleExportChat: async function () {
+        const format = this.dom.exportChatFormatSelect.value;
+        const chatId = this.state.currentChatId;
+
+        if (!chatId) {
+            this._showError("No active chat selected to export.");
+            return;
+        }
+
+        const messages = await this.getMessagesForChat(chatId);
+        const chat = await this.getChat(chatId);
+
+        if (!messages || messages.length === 0) {
+            this._showError("No messages in the current chat to export.");
+            return;
+        }
+
+        let content;
+        let fileExtension;
+
+        if (format === 'markdown') {
+            content = this.formatChatToMarkdown(messages, chat);
+            fileExtension = 'md';
+        } else if (format === 'json') {
+            content = this.formatChatToJson(messages, chat);
+            fileExtension = 'json';
+        } else {
+            this._showError("Invalid export format selected.");
+            return;
+        }
+
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+        const filename = `GrokChat_${timestamp}.${fileExtension}`;
+
+        this._triggerDownload(content, filename, format === 'json' ? 'application/json' : 'text/markdown');
+        this._showToast("Chat exported successfully!");
+    },
+
+    formatChatToMarkdown: function (messages, chat) {
+        const markdownLines = [];
+        if (chat && chat.title) markdownLines.push(`# Chat: ${chat.title}`);
+        markdownLines.push(`## Exported on: ${new Date().toLocaleString()}`);
+
+        let modelInfo = (chat && chat.default_model_id) ? chat.default_model_id : 'N/A';
+        if (modelInfo === 'N/A') {
+            const lastAssistantMsg = messages.filter(m => m.role === 'assistant' && m.model).pop();
+            if (lastAssistantMsg) modelInfo = lastAssistantMsg.model;
+        }
+        markdownLines.push(`## Model: ${modelInfo}`);
+        markdownLines.push("\n---\n");
+
+        messages.forEach(msg => {
+            const sender = msg.role === 'user' ? 'User' : (msg.model || 'Assistant');
+            const time = this._formatTimestamp(msg.timestamp);
+            markdownLines.push(`**${sender}** (${time}):`);
+            // Ensure newlines in message content are rendered as paragraphs in Markdown
+            markdownLines.push(msg.content.replace(/\n/g, '\n\n'));
+            markdownLines.push("\n---\n");
+        });
+        return markdownLines.join('\n');
+    },
+
+    formatChatToJson: function (messages, chat) {
+        let modelInfo = (chat && chat.default_model_id) ? chat.default_model_id : 'N/A';
+        if (modelInfo === 'N/A') {
+            const lastAssistantMsg = messages.filter(m => m.role === 'assistant' && m.model).pop();
+            if (lastAssistantMsg) modelInfo = lastAssistantMsg.model;
+        }
+
+        const exportData = {
+            chatTitle: (chat && chat.title) ? chat.title : 'N/A',
+            exportDate: new Date().toISOString(),
+            model: modelInfo,
+            messages: messages.map(msg => ({
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                timestamp: msg.timestamp,
+                formattedTimestamp: this._formatTimestamp(msg.timestamp),
+                model: msg.model, // Will be undefined for user messages, that's fine
+                provider: msg.provider, // Will be undefined for user messages
+                technical_info: msg.technical_info // May be undefined
+            }))
+        };
+        return JSON.stringify(exportData, null, 2);
     },
 
     renderChatList: async function () {
@@ -1142,7 +1245,19 @@ const GrokChatApp = {
     _formatTimestamp: function (timestamp) { if (!timestamp) return ''; return new Date(timestamp).toLocaleString(); },
     _generateUUID: function () { return 'xxxx-xxxx-xxxx-xxxx'.replace(/[x]/g, function (c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); },
     _showError: function (message) { console.error("GrokChat Error:", message); const errorToast = document.createElement('div'); errorToast.className = 'toast-notification error-toast'; errorToast.textContent = `Error: ${message}`; document.body.appendChild(errorToast); errorToast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background-color:#dc3545; color:white; padding:10px 20px; border-radius:5px; z-index:2000; box-shadow:0 2px 10px rgba(0,0,0,0.2);'; setTimeout(() => { errorToast.remove(); }, 5000); },
-    _showToast: function (message, duration = 3000) { console.log("GrokChat Toast:", message); const toast = document.createElement('div'); toast.className = 'toast-notification'; toast.textContent = message; document.body.appendChild(toast); toast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background-color:var(--current-btn-bg); color:var(--current-btn-text); padding:10px 20px; border-radius:5px; z-index:2000; box-shadow:0 2px 10px rgba(0,0,0,0.2);'; setTimeout(() => { toast.remove(); }, duration); }
+    _showToast: function (message, duration = 3000) { console.log("GrokChat Toast:", message); const toast = document.createElement('div'); toast.className = 'toast-notification'; toast.textContent = message; document.body.appendChild(toast); toast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background-color:var(--current-btn-bg); color:var(--current-btn-text); padding:10px 20px; border-radius:5px; z-index:2000; box-shadow:0 2px 10px rgba(0,0,0,0.2);'; setTimeout(() => { toast.remove(); }, duration); },
+
+    _triggerDownload: function(content, filename, mimeType) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
 };
 
 document.addEventListener('DOMContentLoaded', () => GrokChatApp.init());

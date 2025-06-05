@@ -1,7 +1,13 @@
 # Changelog
-All notable changes to this project will be documented in this file.
+## [0.1.4] - Current Version
 
-## [0.1.3] - Current Version
+- Added quick export button to chat header and export button to the History tab in the Settings for chat export functionality
+- Button uses the export format currently selected in Settings 
+- Supported export formats:
+  - Markdown `.md`
+  - json `.json`
+
+## [0.1.3]
 
 - Implemented system prompt management and selection feature
   - Save, edit, and delete multiple system prompts in settings
