@@ -1,6 +1,11 @@
 # Changelog
 
-## [0.1.5] - Current Version
+## [0.1.6] - Current Version
+
+- Removed debug console output from script.js
+- Updated version to v0.1.6 in html, js, and documentation files
+
+## [0.1.5]
 
 - Fix: Correctly parses bold markdown in edge cases
 - Fix: Correctly renders nested lists in markdown responses
