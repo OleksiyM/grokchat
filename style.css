@@ -467,6 +467,25 @@ html.dark-theme .message.error {
     text-decoration: underline;
 }
 
+/* Ensure proper indentation for nested lists in message content */
+.message-content ul, .message-content ol {
+    /* Ensure default padding/margin is not removed by other global rules */
+    padding-left: 20px; /* Common default, adjust if needed */
+    margin-left: 0; /* Or adjust as per design */
+}
+
+.message-content ul ul, .message-content ol ol,
+.message-content ul ol, .message-content ol ul {
+    /* Apply specific indentation for nested lists */
+    padding-left: 20px; /* Indent further from the parent list item */
+    margin-left: 0; /* Reset margin if parent also has margin, or use margin-left: 20px; if preferred */
+}
+
+/* Optional: Ensure list item markers are displayed */
+.message-content li {
+    list-style: inherit; /* Ensure list items get their markers */
+}
+
 .message-actions {
     margin-top: 8px;
     display: flex;
