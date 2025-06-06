@@ -1,6 +1,11 @@
 # Changelog
 
-## [0.1.5] - Current Version
+## [0.1.6] - Current Version
+
+- Fix: Removed debug console output from script.js
+- Added: Support for math formulas in Latex format
+
+## [0.1.5]
 
 - Fix: Correctly parses bold markdown in edge cases
 - Fix: Correctly renders nested lists in markdown responses

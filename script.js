@@ -606,14 +606,7 @@ const GrokChatApp = {
                     processedContent = processedContent.replace(fix.regex, fix.replacement);
                 });
 
-                console.log("Content after preprocessing for emoji-bold fix:", processedContent);
-
-                console.log("Raw content for marked.parse (should be same as above if no other changes):", rawContent); // Kept for comparison for now
-                const markedOutput = window.marked.parse(processedContent); // Use processedContent
-                console.log("HTML output from marked.parse (after emoji fix):", markedOutput);
-                const sanitizedHtml = window.DOMPurify.sanitize(markedOutput);
-                console.log("HTML output after DOMPurify.sanitize (after emoji fix):", sanitizedHtml);
-                contentDiv.innerHTML = sanitizedHtml;
+                contentDiv.innerHTML = window.DOMPurify.sanitize(window.marked.parse(processedContent));
                 if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
                     try {
                         MathJax.typesetPromise([contentDiv]);
