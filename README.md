@@ -4,7 +4,7 @@
 
 [![GrokChat Logo](https://img.shields.io/badge/GrokChat-Web%20Client-blue)](https://grokchat.pages.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.8-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.1.5-orange)](CHANGELOG.md)
 
 </div>
 
@@ -160,7 +160,7 @@ Contributions and bug reports are welcome via GitHub issues and pull requests.
 
 ## License
 
-MIT [License](LICENSE)
+MIT License
 
 ---
 
