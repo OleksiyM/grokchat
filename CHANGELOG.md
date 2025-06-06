@@ -1,6 +1,11 @@
 # Changelog
 
-## [0.1.5] - Current Version
+## [0.1.9] - Current Version
+
+- Reverted project state to match v0.1.5, discarding all changes made in later versions (v0.1.6–v0.1.8).
+- Cleaned up temporary debug console logs.
+
+## [0.1.5] 
 
 - Fix: Correctly parses bold markdown in edge cases
 - Fix: Correctly renders nested lists in markdown responses
