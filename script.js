@@ -544,6 +544,13 @@ const GrokChatApp = {
                 summary.textContent = 'Show thinking process';
                 const thinkingDiv = document.createElement('div');
                 thinkingDiv.innerHTML = window.DOMPurify.sanitize(window.marked.parse(thinkingBlockContent));
+                if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                    try {
+                        MathJax.typesetPromise([thinkingDiv]);
+                    } catch (e) {
+                        console.error('MathJax typesetting error in thinking block:', e);
+                    }
+                }
                 details.appendChild(summary);
                 details.appendChild(thinkingDiv);
                 htmlOutput += details.outerHTML;
@@ -607,6 +614,13 @@ const GrokChatApp = {
                 const sanitizedHtml = window.DOMPurify.sanitize(markedOutput);
                 console.log("HTML output after DOMPurify.sanitize (after emoji fix):", sanitizedHtml);
                 contentDiv.innerHTML = sanitizedHtml;
+                if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                    try {
+                        MathJax.typesetPromise([contentDiv]);
+                    } catch (e) {
+                        console.error('MathJax typesetting error in regular message:', e);
+                    }
+                }
             } else {
                 contentDiv.textContent = rawContent;
             }
@@ -916,6 +930,13 @@ const GrokChatApp = {
                 assistantMessageElement.innerHTML = window.DOMPurify.sanitize(window.marked.parse(this.state.currentStreamingResponseMessage));
                 if (typeof window.hljs === 'object' && typeof window.hljs.highlightElement === 'function') {
                     assistantMessageElement.querySelectorAll('pre code').forEach(block => window.hljs.highlightElement(block));
+                }
+                if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                    try {
+                        MathJax.typesetPromise([assistantMessageElement]);
+                    } catch (e) {
+                        console.error('MathJax typesetting error in streaming message:', e);
+                    }
                 }
             }
 
