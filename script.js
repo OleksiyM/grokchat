@@ -20,10 +20,10 @@ const mathDisplayExtension = {
   },
   renderer(token) {
     // Render in a way that MathJax can process, e.g., \[ content \] or \( content \)
-    // For block-level, MathJax typically uses \[...\] or $$...$$
+    // For block-level, MathJax typically uses \[...수를\] or $$...$$
     // For inline-level, MathJax typically uses \(...\)
     // We are using single brackets as per the requirement, MathJax will need to be configured for this.
-    return `[${token.text}]`;
+    return `\[${token.text}\]`;
   }
 };
 

@@ -1,6 +1,10 @@
 # Changelog
 
-## [0.1.7] - Current Version
+## [0.1.8] - Current Version
+
+- Improved the display of mathematical formulas in chat, ensuring they render correctly and clearly.
+
+## [0.1.7]
 
 - Optimize page speed by addressing render-blocking resources.
 - Fix: LaTeX within `[ ... ]` is preserved and correctly processed by MathJax.
