@@ -1,3 +1,39 @@
+// Custom marked.js extension for LaTeX-like math display
+const mathDisplayExtension = {
+  name: 'mathDisplay',
+  level: 'block', // or 'inline'
+  start(src) {
+    // A simple check for '['. Refine if conflicts with Markdown links arise.
+    return src.indexOf('[');
+  },
+  tokenizer(src, tokens) {
+    const rule = /^\s*\[((?:.|\n)+?)\]\s*/; // Matches [ content ]
+    const match = rule.exec(src);
+    if (match) {
+      return {
+        type: 'mathDisplay', // Must be 'mathDisplay'
+        raw: match[0], // Full match, e.g., "[ E=mc^2 ]"
+        text: match[1].trim(), // Content inside brackets, e.g., "E=mc^2"
+        tokens: [] // No further tokenization of the content
+      };
+    }
+  },
+  renderer(token) {
+    // Render in a way that MathJax can process, e.g., \[ content \] or \( content \)
+    // For block-level, MathJax typically uses \[...\] or $$...$$
+    // For inline-level, MathJax typically uses \(...\)
+    // We are using single brackets as per the requirement, MathJax will need to be configured for this.
+    return `[${token.text}]`;
+  }
+};
+
+// Register the extension with marked
+if (typeof marked !== 'undefined') {
+  marked.use({ extensions: [mathDisplayExtension] });
+} else {
+  console.error('marked.js not loaded. Math display extension cannot be registered.');
+}
+
 const GrokChatApp = {
     config: {
         dbName: 'GrokChatDB',
