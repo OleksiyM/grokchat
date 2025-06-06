@@ -1,6 +1,11 @@
 # Changelog
 
-## [0.1.6] - Current Version
+## [0.1.7] - Current Version
+
+- Optimize page speed by addressing render-blocking resources.
+- Fix: LaTeX within `[ ... ]` is preserved and correctly processed by MathJax.
+
+## [0.1.6]
 
 - Fix: Removed debug console output from script.js
 - Added: Support for math formulas in Latex format
