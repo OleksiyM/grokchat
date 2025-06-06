@@ -160,7 +160,7 @@ Contributions and bug reports are welcome via GitHub issues and pull requests.
 
 ## License
 
-MIT License
+MIT [License](LICENSE)
 
 ---
 
