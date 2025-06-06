@@ -1,32 +1,40 @@
 # Changelog
-## [0.1.4] - Current Version
 
-- Added quick export button to chat header and export button to the History tab in the Settings for chat export functionality
-- Button uses the export format currently selected in Settings 
+## [0.1.5] - Current Version
+
+- Fix: Correctly parses bold markdown in edge cases
+- Fix: Correctly renders nested lists in markdown responses
+- Added: Git version tags and reorganized branches
+
+## [0.1.4]
+
+- Added a quick export button to the chat header and an export button in the History tab under Settings.
+- Both buttons use the export format currently selected in Settings.
 - Supported export formats:
   - Markdown `.md`
   - json `.json`
 
 ## [0.1.3]
 
-- Implemented system prompt management and selection feature
-  - Save, edit, and delete multiple system prompts in settings
-  - Select prompts from dropdown in chat window
+- Implemented system prompt management and selection:
+  - Save, edit, and delete multiple system prompts in Settings
+  - Select a prompt from a dropdown in the chat window
 - Fixed various bugs related to prompt handling
-- Updated version number in README.md
+- Documented prompt management functionality in `README.md`
 
 ## [0.1.2]
 
-- Implemented support for streaming responses
-- Improved Regenerate button functionality
-- Fixed some layout issues
-- Fixed a bug of the wrong position technical details responses pop up
-- Added image to the GitHub repository (for social sharing)
+- Added support for streaming responses
+- Improved functionality of the Regenerate button
+- Fixed layout issues
+- Fixed bug with incorrect position of the technical details popup
+- Added a preview image to the GitHub repository (for social sharing)
 
 ## [0.1.1]
 
-- Fixed the issue in the code that's causing the last assistant message to be missed when sending requests to the server. The problem is in the `_buildContextMessages` function which prepares the chat history for API requests.
-- Changed `README.md` to include instructions on how to run the application locally and other details.
+- Fixed an issue where the last assistant message was sometimes missing in requests to the server
+  - The bug was in the `_buildContextMessages` function, which prepares chat history for API calls
+- Updated `README.md` with instructions on running the app locally and additional details
 
 ## [0.1.0] - Initial Release
 
@@ -51,6 +59,7 @@
 - **Responsive Design**: Works on desktop and mobile devices
 
 ### Known Limitations
-- Streaming responses not implemented (already implemented)
-- Potential formatting issues with complex markdown
-- Layout may have issues on certain devices (partially fixed)
+- Streaming responses not implemented (already implemented in later version)
+- Potential formatting issues with complex markdown (partially resolved)
+- Layout may have issues on certain devices (partially resolved)
+
