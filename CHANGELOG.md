@@ -2,8 +2,8 @@
 
 ## [0.1.6] - Current Version
 
-- Removed debug console output from script.js
-- Updated version to v0.1.6 in html, js, and documentation files
+- Fix: Removed debug console output from script.js
+- Added: Support for math formulas in Latex format
 
 ## [0.1.5]
 
