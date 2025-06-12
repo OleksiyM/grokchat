@@ -487,10 +487,53 @@ html.dark-theme .message.error {
 }
 
 .message-actions {
-    margin-top: 8px;
     display: flex;
-    gap: 8px;
-    align-items: center; /* Align buttons vertically */
+    gap: 5px;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.message-separator {
+    margin: 10px 0;
+    border: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dark-theme .message-separator {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.message-edit-area {
+    margin-top: 10px;
+    width: 100%;
+}
+
+.message-edit-textarea {
+    width: 100%;
+    height: auto; /* Adjust height dynamically */
+    min-height: 50px; /* Minimum height for small messages */
+    min-width: 200px; /* Minimum width when shrinking */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: inherit;
+    resize: both; /* Allow both vertical and horizontal resizing */
+    box-sizing: border-box;
+    overflow: auto; /* Show scrollbars when needed */
+}
+
+.dark-theme .message-edit-textarea {
+    background-color: #333;
+    color: #eee;
+    border-color: #555;
+}
+
+.message-edit-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
 }
 
 .message-actions button {

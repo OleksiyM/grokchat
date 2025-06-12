@@ -15,7 +15,8 @@ const GrokChatApp = {
                 { id: 'mistral-default', name: 'Mistral', baseUrl: 'https://api.mistral.ai/v1', apiKey: '', models: {}, lastUpdatedModels: null },
                 { id: 'deepseek-default', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com', apiKey: '', models: {}, lastUpdatedModels: null },
                 { id: 'novita-default', name: 'Novita', baseUrl: 'https://api.novita.ai/v3/openai', apiKey: '', models: {}, lastUpdatedModels: null },
-                { id: 'ollama-default', name: 'Ollama', baseUrl: 'http://localhost:11434/v1', apiKey: 'Some Text', models: {}, lastUpdatedModels: null }
+                { id: 'google-default', name: 'Google', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', apiKey: '', models: {}, lastUpdatedModels: null },
+                { id: 'ollama-default', name: 'Ollama', baseUrl: 'http://localhost:11434/v1', apiKey: '', models: {}, lastUpdatedModels: null }
 
             ],
             selectedProviderId: null,
@@ -498,7 +499,7 @@ const GrokChatApp = {
     _appendMessageToDom: function (message, isStreaming = false) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', message.role);
-        if (message.isError) messageDiv.classList.add('error');
+        if (message.isError) messageDiv.classList.add('error');        
 
         if (message.id) {
             messageDiv.dataset.messageId = message.id;
@@ -616,16 +617,112 @@ const GrokChatApp = {
 
         const timestampSpan = document.createElement('span');
         timestampSpan.classList.add('timestamp');
-        timestampSpan.textContent = this._formatTimestamp(message.timestamp);
+        let timestampText = this._formatTimestamp(message.timestamp);
+        if (message.edited) {
+            timestampText = 'edited | ' + timestampText;
+        }
+        timestampSpan.textContent = timestampText;
 
         messageDiv.appendChild(senderSpan);
         messageDiv.appendChild(contentDiv);
-
-        if (message.role === 'assistant' && !message.isError && !isStreaming && message.technical_info) {
-            const actionsDiv = this._createMessageActions(message);
-            messageDiv.appendChild(actionsDiv);
-        }
         messageDiv.appendChild(timestampSpan);
+
+        // Editable content area for in-place editing
+        const editArea = document.createElement('div');
+        editArea.classList.add('message-edit-area');
+        editArea.style.display = 'none'; // Hidden by default
+
+        const editTextarea = document.createElement('textarea');
+        editTextarea.classList.add('message-edit-textarea');
+        editTextarea.value = message.content;
+        editArea.appendChild(editTextarea);
+
+        const editButtons = document.createElement('div');
+        editButtons.classList.add('message-edit-buttons');
+
+        const saveBtn = document.createElement('button');
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+        saveBtn.onclick = () => this.handleSaveEdit(message.id, editTextarea.value);
+        editButtons.appendChild(saveBtn);
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+        cancelBtn.onclick = () => this.handleCancelEdit(message.id);
+        editButtons.appendChild(cancelBtn);
+
+        editArea.appendChild(editButtons);
+        messageDiv.appendChild(editArea);
+
+        // Add message actions for both user and assistant messages
+        if (!isStreaming && message.id && !message.isError) {
+            const separator = document.createElement('hr');
+            separator.classList.add('message-separator');
+            messageDiv.appendChild(separator);
+
+            const messageActions = document.createElement('div');
+            messageActions.classList.add('message-actions');
+
+            if (message.role === 'user') {
+                const editBtn = document.createElement('button');
+                editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+                editBtn.onclick = () => this.handleEditMessage(message.id);
+                messageActions.appendChild(editBtn);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+                deleteBtn.onclick = () => this.handleDeleteMessage(message.id);
+                messageActions.appendChild(deleteBtn);
+            } else if (message.role === 'assistant') {
+                const copyBtn = document.createElement('button');
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                copyBtn.onclick = () => this._copyMessageContent(message);
+                messageActions.appendChild(copyBtn);
+
+                const editBtn = document.createElement('button');
+                editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+                editBtn.onclick = () => this.handleEditMessage(message.id);
+                messageActions.appendChild(editBtn);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+                deleteBtn.onclick = () => this.handleDeleteMessage(message.id);
+                messageActions.appendChild(deleteBtn);
+
+                const regenBtn = document.createElement('button');
+                regenBtn.innerHTML = '<i class="fas fa-redo"></i> Regenerate';
+                regenBtn.onclick = () => this.handleRegenerateMessage(message.chat_id, message.id);
+                messageActions.appendChild(regenBtn);
+
+                if (message.technical_info) {
+                    const infoBtn = document.createElement('button');
+                    infoBtn.classList.add('info-button-container');
+                    infoBtn.innerHTML = '<i class="fas fa-info-circle"></i> Info';
+                    
+                    const techInfoPopup = document.createElement('div');
+                    techInfoPopup.classList.add('tech-info-popup');
+                    let techInfoText = `Provider: ${message.provider || 'N/A'}\nModel: ${message.model || 'N/A'}\n`;
+                    if (message.technical_info) {
+                        techInfoText += `Duration: ${message.technical_info.duration_ms ? (message.technical_info.duration_ms / 1000).toFixed(2) + 's' : 'N/A'}\n`;
+                        techInfoText += `Prompt Tokens: ${message.technical_info.prompt_tokens || 'N/A'}\n`;
+                        techInfoText += `Completion Tokens: ${message.technical_info.completion_tokens || 'N/A'}\n`;
+                        techInfoText += `Total Tokens: ${message.technical_info.total_tokens || 'N/A'}\n`;
+                        techInfoText += `Speed (tokens/sec): ${message.technical_info.speed_tokens_per_sec ? message.technical_info.speed_tokens_per_sec.toFixed(2) : 'N/A'}`;
+                    }
+                    techInfoPopup.textContent = techInfoText;
+                    infoBtn.appendChild(techInfoPopup);
+                    
+                    infoBtn.onmouseenter = () => techInfoPopup.style.display = 'block';
+                    infoBtn.onmouseleave = () => techInfoPopup.style.display = 'none';
+                    infoBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        techInfoPopup.style.display = (techInfoPopup.style.display === 'block' ? 'none' : 'block');
+                    };
+                    messageActions.appendChild(infoBtn);
+                }
+            }
+            
+            messageDiv.appendChild(messageActions);
+        }
 
         this.dom.messageArea.appendChild(messageDiv);
         if (!isStreaming) {
@@ -1002,6 +1099,122 @@ const GrokChatApp = {
     },
 
     _interruptRequest: function () { if (this.state.currentAbortController) { this.state.currentAbortController.abort(); console.log("Request interrupted by user."); } },
+
+    handleEditMessage: async function (messageId) {
+        const messageDiv = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageDiv) return;
+
+        const contentDiv = messageDiv.querySelector('.message-content');
+        const editArea = messageDiv.querySelector('.message-edit-area');
+        const editTextarea = messageDiv.querySelector('.message-edit-textarea');
+        const messageActions = messageDiv.querySelector('.message-actions');
+        const messageSeparator = messageDiv.querySelector('.message-separator');
+
+        if (contentDiv && editArea && editTextarea && messageActions && messageSeparator) {
+            contentDiv.style.display = 'none';
+            editArea.style.display = 'block';
+            const message = await this.getMessage(messageId);
+            if (message) {
+                editTextarea.value = message.content; // Populate with original markdown content
+            }
+            editTextarea.focus();
+            this._autoGrowTextarea(editTextarea); // Adjust height on display
+            editTextarea.oninput = () => this._autoGrowTextarea(editTextarea); // Adjust height on input
+            messageActions.style.display = 'none'; // Hide action buttons during edit
+            messageSeparator.style.display = 'none'; // Hide separator during edit
+        }
+    },
+
+    handleDeleteMessage: async function(messageId) {
+        if (!this.state.db || !confirm('Are you sure you want to delete this message?')) return;
+        
+        const message = await this.getMessage(messageId);
+        if (!message) return;
+
+        // Delete the message and its response if it exists
+        const messages = await this.getMessagesForChat(message.chat_id);
+        const messageIndex = messages.findIndex(m => m.id === messageId);
+        
+        if (messageIndex !== -1) {
+            // If this is a user message and there's an assistant response after it, delete that too
+            if (message.role === 'user' && 
+                messageIndex + 1 < messages.length && 
+                messages[messageIndex + 1].role === 'assistant') {
+                await this.deleteMessage(messages[messageIndex + 1].id);
+            }
+            await this.deleteMessage(messageId);
+            await this.renderMessages(this.state.currentChatId);
+        }
+    },
+
+    getMessage: function(messageId) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.state.db.transaction(['messages'], 'readonly');
+            const store = transaction.objectStore('messages');
+            const request = store.get(messageId);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    updateMessage: function(message) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.state.db.transaction(['messages'], 'readwrite');
+            const store = transaction.objectStore('messages');
+            const request = store.put(message);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    deleteMessage: function(messageId) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.state.db.transaction(['messages'], 'readwrite');
+            const store = transaction.objectStore('messages');
+            const request = store.delete(messageId);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    handleSaveEdit: async function (messageId, newContent) {
+        const messageDiv = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageDiv) return;
+
+        const message = await this.getMessage(messageId);
+        if (!message) return;
+
+        if (newContent !== null && newContent.trim() !== '' && newContent !== message.content) {
+            message.content = newContent.trim();
+            message.edited = true;
+            await this.updateMessage(message);
+            this.renderMessages(this.state.currentChatId); // Re-render to show updated content
+        } else {
+            this.handleCancelEdit(messageId); // If content is same or empty, just cancel
+        }
+    },
+
+    handleCancelEdit: function (messageId) {
+        const messageDiv = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageDiv) return;
+
+        const contentDiv = messageDiv.querySelector('.message-content');
+        const editArea = messageDiv.querySelector('.message-edit-area');
+        const messageActions = messageDiv.querySelector('.message-actions');
+        const messageSeparator = messageDiv.querySelector('.message-separator');
+
+        if (contentDiv && editArea && messageActions && messageSeparator) {
+            contentDiv.style.display = 'block';
+            editArea.style.display = 'none';
+            messageActions.style.display = 'flex'; // Show action buttons again
+            messageSeparator.style.display = 'block'; // Show separator again
+        }
+    },
+
+    _autoGrowTextarea: function(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = (textarea.scrollHeight) + 'px';
+    },
 
     handleRegenerateMessage: async function (chatId, assistantMessageId) {
         if (this.state.isRequestInProgress) return; if (!this.state.db) return;

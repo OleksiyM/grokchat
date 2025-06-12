@@ -1,6 +1,20 @@
 # Changelog
 
-## [0.1.9] - Current Version
+## [0.1.10] Current Version
+
+- Added in-place message editing:
+  - Edit messages directly within the chat interface.
+  - Supports markdown formatting in the edit area.
+  - Displays an "edited" label for modified messages.
+- Improved message edit textarea:
+  - Allows both vertical and horizontal resizing.
+  - Minimum width of 200px.
+  - Scrollbars appear when content exceeds visible area.
+- Added the ability to delete any message in the chat.
+- Integrated support for Google Gemini models (OpenAI compatible mode).
+  - Supported Gemini thinking models can now set `Reasoning Efforts` (None, Low, Medium, High).
+
+## [0.1.9]
 
 - Reverted project state to match v0.1.5, discarding all changes made in later versions (v0.1.6–v0.1.8).
 - Cleaned up temporary debug console logs.

@@ -4,7 +4,7 @@
 
 [![GrokChat Logo](https://img.shields.io/badge/GrokChat-Web%20Client-blue)](https://grokchat.pages.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.9-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.1.10-orange)](CHANGELOG.md)
 
 </div>
 
@@ -13,7 +13,7 @@ A lightweight, browser-based chat interface for interacting with various AI prov
 ## Features
 
 - **Quick Export Access**: Export current chat directly from header with one click or from the History tab in Settings
-- **Multi-Provider Support**: Connect to various AI services including Groq, OpenAI, Anthropic, Mistral, xAI, DeepSeek, Novita, OpenRouter, and local Ollama instances
+- **Multi-Provider Support**: Connect to various AI services including Groq, OpenAI, Anthropic, Mistral, xAI, DeepSeek, Novita, Google Gemini (with reasoning efforts), OpenRouter, and local Ollama instances
 - **Local-First Architecture**: All chat history and settings stored securely in your browser
 - **Progressive Web App (PWA)**: Installable for an app-like experience with basic offline access
 - **Customizable Experience**:
@@ -93,7 +93,7 @@ Click the sliders icon (⚙️) in the top right to access chat parameters:
 - Temperature
 - Max Tokens
 - Top P
-- Reasoning Effort (for supported models)
+- Reasoning Effort (for supported models, e.g., Google Gemini, Grok 3 mini: None, Low, Medium, High)
 
 To manage system prompts:
 1. Go to Settings > System Prompts
@@ -105,10 +105,12 @@ To manage system prompts:
 
 - **Rename a Chat**: Click the pencil icon next to a chat in the sidebar
 - **Delete a Chat**: Click the trash icon next to a chat
+- **Delete Any Message**: Click the trash icon next to any message to remove it from the chat history.
 - **Clear All History**: Go to Settings > History tab > "Clear All History"
 - **Export Chat**: Go to Settings > History tab > "Export Chat"
 
 ### Advanced Features
+- **In-place Message Editing**: Click the edit icon next to a message to modify its content directly. Edited messages will be marked with an "*edited*" label.
 - **Regenerate Response**: Click the regenerate icon next to a message
 - **Copy Message**: Click the copy icon next to a message. Format options can be set in the Settings -> General:
   - Markdown
