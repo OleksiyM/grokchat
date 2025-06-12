@@ -1,6 +1,13 @@
 # Changelog
 
-## [0.1.10] Current Version
+## [0.1.11] Current version
+
+- UI Improvements:
+   - Enhanced message edit window sizing and responsive behavior
+   - Styled "edited" indicator with theme-adaptive colors
+   - Improved message action button spacing 
+
+## [0.1.10] 
 
 - Added in-place message editing:
   - Edit messages directly within the chat interface.

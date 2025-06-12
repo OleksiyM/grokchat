@@ -617,11 +617,17 @@ const GrokChatApp = {
 
         const timestampSpan = document.createElement('span');
         timestampSpan.classList.add('timestamp');
-        let timestampText = this._formatTimestamp(message.timestamp);
+
         if (message.edited) {
-            timestampText = 'edited | ' + timestampText;
+            const editedLabel = document.createElement('span');
+            editedLabel.classList.add('edited-label');
+            editedLabel.textContent = 'edited';
+            timestampSpan.appendChild(editedLabel);
+            timestampSpan.appendChild(document.createTextNode(' ')); // Adds a space after 'edited'
         }
-        timestampSpan.textContent = timestampText;
+
+        const timeTextNode = document.createTextNode(this._formatTimestamp(message.timestamp));
+        timestampSpan.appendChild(timeTextNode);
 
         messageDiv.appendChild(senderSpan);
         messageDiv.appendChild(contentDiv);
@@ -1111,17 +1117,45 @@ const GrokChatApp = {
         const messageSeparator = messageDiv.querySelector('.message-separator');
 
         if (contentDiv && editArea && editTextarea && messageActions && messageSeparator) {
-            contentDiv.style.display = 'none';
-            editArea.style.display = 'block';
+            const textareaStyle = window.getComputedStyle(editTextarea);
+            const textareaMinWidth = parseFloat(textareaStyle.minWidth) || 0;
+
+            const messageStyle = window.getComputedStyle(messageDiv);
+            const messagePaddingLeft = parseFloat(messageStyle.paddingLeft) || 0;
+            const messagePaddingRight = parseFloat(messageStyle.paddingRight) || 0;
+            const messageBorderLeft = parseFloat(messageStyle.borderLeftWidth) || 0;
+            const messageBorderRight = parseFloat(messageStyle.borderRightWidth) || 0;
+            const messageHorizontalChrome = messagePaddingLeft + messagePaddingRight + messageBorderLeft + messageBorderRight;
+
+            const minOuterWidthForMessageDiv = textareaMinWidth + messageHorizontalChrome;
+            const currentMessageDivOuterWidth = messageDiv.offsetWidth;
+
+            let effectiveOuterWidth = Math.max(currentMessageDivOuterWidth, minOuterWidthForMessageDiv);
+            // Ensure effectiveOuterWidth is not NaN if any parseFloat failed
+            if (isNaN(effectiveOuterWidth) || effectiveOuterWidth <= 0) {
+                // Fallback to offsetWidth or a reasonable default if calculation failed
+                effectiveOuterWidth = currentMessageDivOuterWidth > 0 ? currentMessageDivOuterWidth : textareaMinWidth;
+                if (isNaN(effectiveOuterWidth) || effectiveOuterWidth <= 0) { // Second fallback
+                    effectiveOuterWidth = 200; // Default fallback width in pixels
+                }
+            }
+
+            messageDiv.style.width = effectiveOuterWidth + 'px';
+            contentDiv.style.display = 'none'; // Hide original content
+
+            editArea.style.display = 'block'; // Show edit area
+            editArea.style.width = ''; // Let editArea fill messageDiv (via CSS width: 100%)
+            editTextarea.style.width = ''; // Let editTextarea fill editArea (via CSS width: 100%)
+
             const message = await this.getMessage(messageId);
             if (message) {
                 editTextarea.value = message.content; // Populate with original markdown content
             }
             editTextarea.focus();
-            this._autoGrowTextarea(editTextarea); // Adjust height on display
-            editTextarea.oninput = () => this._autoGrowTextarea(editTextarea); // Adjust height on input
-            messageActions.style.display = 'none'; // Hide action buttons during edit
-            messageSeparator.style.display = 'none'; // Hide separator during edit
+            this._autoGrowTextarea(editTextarea);
+            editTextarea.oninput = () => this._autoGrowTextarea(editTextarea);
+            messageActions.style.display = 'none';
+            messageSeparator.style.display = 'none';
         }
     },
 
@@ -1205,9 +1239,11 @@ const GrokChatApp = {
 
         if (contentDiv && editArea && messageActions && messageSeparator) {
             contentDiv.style.display = 'block';
+            messageDiv.style.width = ''; // Reset messageDiv's fixed width
+            editArea.style.width = ''; // Reset width (should be there from previous attempt)
             editArea.style.display = 'none';
-            messageActions.style.display = 'flex'; // Show action buttons again
-            messageSeparator.style.display = 'block'; // Show separator again
+            messageActions.style.display = 'flex';
+            messageSeparator.style.display = 'block';
         }
     },
 
