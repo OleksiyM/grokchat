@@ -395,6 +395,14 @@ html.dark-theme .message.error {
     text-align: right;
 }
 
+.message .timestamp .edited-label {
+    font-style: italic;
+    opacity: 0.8;
+    font-size: 0.9em; /* Slightly smaller than the parent timestamp's font-size */
+    /* margin-right: 4px; */ /* The JS already adds a space ' ' node */
+    color: var(--current-icon-color); /* Using a variable for theme adaptability */
+}
+
 .message-content p:last-child {
     margin-bottom: 0;
 }
@@ -546,6 +554,10 @@ html.dark-theme .message.error {
     cursor: pointer;
     display: inline-flex; /* Allow icon and text to align */
     align-items: center;
+}
+
+.message-actions button i {
+    margin-right: 5px; /* Space between icon and text */
 }
 
 .message-actions button:hover {
