@@ -1179,3 +1179,78 @@ html.dark-theme .message-actions button:hover {
     /* width: 100%; */
     /* box-sizing: border-box; */
 }
+
+/* Chat Folders Styles */
+#chats-settings .item-list { /* General item list styling for folders */
+    list-style-type: none;
+    padding-left: 0;
+    border: 1px solid var(--current-border-color);
+    border-radius: 5px;
+    max-height: 200px; /* Or adjust as needed */
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+#chats-settings .item-list li {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--current-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#chats-settings .item-list li:last-child {
+    border-bottom: none;
+}
+
+#chats-settings .item-list li:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+html.dark-theme #chats-settings .item-list li:hover {
+    background-color: rgba(255,255,255,0.05);
+}
+
+#chats-settings .item-list li.selected {
+    background-color: var(--current-btn-bg);
+    color: var(--current-btn-text);
+}
+
+#chats-settings .item-list li.selected .folder-info {
+    color: var(--current-btn-text); /* Ensure info text is also visible */
+    opacity: 0.8;
+}
+
+
+#chats-settings .folder-name {
+    flex-grow: 1;
+}
+
+#chats-settings .folder-info {
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin-left: 10px;
+}
+
+#add-folder-form-container {
+    display: none; /* Hidden by default, shown by JS */
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+#add-folder-form-container input[type="text"] {
+    flex-grow: 1;
+    /* Takes remaining space */
+}
+
+.folder-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 15px; /* Space before the hr */
+}
+
+.folder-actions .btn {
+    flex-grow: 1; /* Distribute space among buttons if desired, or remove for natural size */
+}

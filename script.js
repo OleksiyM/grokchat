@@ -24,6 +24,9 @@ const GrokChatApp = {
             lastOpenedChatId: null,
             systemPrompts: [
                 { name: 'Default Prompt', text: 'You are a helpful assistant.' }
+            ],
+            chatFolders: [
+                { id: 'default', name: 'Default', isSystem: true } // Add a default folder
             ]
         },
         defaultChatParams: {
@@ -95,6 +98,8 @@ const GrokChatApp = {
         isSendingMessage: false, // Guards against rapid re-entry into handleSendMessage
         currentStreamingResponseMessage: '', // Accumulates AI response during streaming
         editingSystemPromptName: null, // To track system prompt being edited
+        selectedFolderId: null, // To track selected folder in settings
+        editingFolderId: null, // To track folder being edited/added
     },
 
     init: async function () {
@@ -199,6 +204,17 @@ const GrokChatApp = {
         this.dom.exportChatFormatSelect = document.getElementById('export-chat-format');
         this.dom.exportCurrentChatBtn = document.getElementById('export-current-chat-btn');
         this.dom.headerExportChatBtn = document.getElementById('header-export-chat-btn');
+
+        // Chat Folders UI
+        this.dom.chatsSettingsTab = document.querySelector('.tab-link[data-tab="chats-settings"]');
+        this.dom.chatFoldersList = document.getElementById('chat-folders-list');
+        this.dom.addFolderBtn = document.getElementById('add-folder-btn');
+        this.dom.renameFolderBtn = document.getElementById('rename-folder-btn');
+        this.dom.deleteFolderBtn = document.getElementById('delete-folder-btn');
+        this.dom.addFolderFormContainer = document.getElementById('add-folder-form-container');
+        this.dom.newFolderNameInput = document.getElementById('new-folder-name-input');
+        this.dom.saveNewFolderBtn = document.getElementById('save-new-folder-btn');
+        this.dom.cancelAddFolderBtn = document.getElementById('cancel-add-folder-btn');
     },
 
     _registerServiceWorker: function () {
@@ -222,13 +238,26 @@ const GrokChatApp = {
             if (!this.state.settings.systemPrompts || !Array.isArray(this.state.settings.systemPrompts) || this.state.settings.systemPrompts.length === 0) {
                 this.state.settings.systemPrompts = [...this.config.defaultSettings.systemPrompts];
             }
+            // Ensure chatFolders are initialized
+            if (!this.state.settings.chatFolders || !Array.isArray(this.state.settings.chatFolders) || this.state.settings.chatFolders.length === 0) {
+                this.state.settings.chatFolders = [...this.config.defaultSettings.chatFolders];
+            } else {
+                // Ensure the 'Default' folder exists and is marked as system if loading from older settings
+                const defaultFolderExists = this.state.settings.chatFolders.find(f => f.id === 'default');
+                if (!defaultFolderExists) {
+                    this.state.settings.chatFolders.unshift({ id: 'default', name: 'Default', isSystem: true });
+                } else if (!defaultFolderExists.isSystem) {
+                    defaultFolderExists.isSystem = true;
+                }
+            }
         } else {
             this.state.settings = { ...this.config.defaultSettings };
             this.state.settings.providers = this.state.settings.providers.map(p => ({
                 ...p, id: this._generateUUID()
             }));
-            // Ensure systemPrompts are initialized for new settings
+            // Ensure systemPrompts and chatFolders are initialized for new settings
             this.state.settings.systemPrompts = [...this.config.defaultSettings.systemPrompts];
+            this.state.settings.chatFolders = [...this.config.defaultSettings.chatFolders];
         }
         console.log("Settings loaded:", this.state.settings);
     },
@@ -389,6 +418,14 @@ const GrokChatApp = {
                 this.handleExportChat();
             });
         }
+
+        // Chat Folder UI Listeners
+        if (this.dom.addFolderBtn) this.dom.addFolderBtn.addEventListener('click', () => this._handleShowAddFolderForm());
+        if (this.dom.renameFolderBtn) this.dom.renameFolderBtn.addEventListener('click', () => this._handleShowRenameFolderForm());
+        if (this.dom.deleteFolderBtn) this.dom.deleteFolderBtn.addEventListener('click', () => this._handleDeleteFolder());
+        if (this.dom.saveNewFolderBtn) this.dom.saveNewFolderBtn.addEventListener('click', () => this._handleSaveFolderPath());
+        if (this.dom.cancelAddFolderBtn) this.dom.cancelAddFolderBtn.addEventListener('click', () => this._handleCancelAddFolder());
+
     },
 
     handleExportChat: async function () {
@@ -1314,11 +1351,156 @@ const GrokChatApp = {
     },
 
     _openSettingsModal: async function () { this._populateSettingsForm(); await this._populateSettingsHistoryList(); this.dom.settingsModal.style.display = 'flex'; },
-    _populateSettingsForm: function () { this.dom.themeSelector.value = this.state.settings.theme; this.dom.contextWindowSizeInput.value = this.state.settings.contextWindowSize; this.dom.contextWindowSizeValue.textContent = this.state.settings.contextWindowSize; this.dom.copyFormatSelector.value = this.state.settings.copyFormat; this._renderProviderListForSettings(); this._renderSystemPromptsList(); },
+    _populateSettingsForm: function () { this.dom.themeSelector.value = this.state.settings.theme; this.dom.contextWindowSizeInput.value = this.state.settings.contextWindowSize; this.dom.contextWindowSizeValue.textContent = this.state.settings.contextWindowSize; this.dom.copyFormatSelector.value = this.state.settings.copyFormat; this._renderProviderListForSettings(); this._renderSystemPromptsList(); this._renderChatFoldersList(); this.dom.addFolderFormContainer.style.display = 'none'; },
     _collectSettingsFromForm: function () { this.state.settings.theme = this.dom.themeSelector.value; this.state.settings.contextWindowSize = parseInt(this.dom.contextWindowSizeInput.value); this.state.settings.copyFormat = this.dom.copyFormatSelector.value; },
     async _populateSettingsHistoryList() { if (!this.state.db) { this.dom.settingsChatList.innerHTML = '<li>DB not available.</li>'; return; } const chats = await this.getAllChats(); this.dom.settingsChatList.innerHTML = ''; if (chats.length === 0) { this.dom.settingsChatList.innerHTML = '<li>No chats.</li>'; } else { chats.sort((a, b) => b.updated_at - a.updated_at).forEach(chat => { const li = document.createElement('li'); li.innerHTML = `<span>${chat.title || `Chat ${chat.id}`} (Updated: ${this._formatTimestamp(chat.updated_at)})</span>`; const deleteBtn = document.createElement('button'); deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete'; deleteBtn.classList.add('btn', 'btn-danger', 'btn-sm'); deleteBtn.style.marginLeft = '10px'; deleteBtn.onclick = () => this.handleDeleteChat(chat.id, true); li.appendChild(deleteBtn); this.dom.settingsChatList.appendChild(li); }); } },
     _renderProviderListForSettings: function () { this.dom.providerList.innerHTML = ''; if (this.state.settings.providers.length === 0) { this.dom.providerList.innerHTML = '<p>No providers. Add one!</p>'; return; } this.state.settings.providers.forEach(provider => { const itemDiv = document.createElement('div'); itemDiv.classList.add('provider-item'); itemDiv.innerHTML = `<div class="provider-item-header"><h4>${provider.name}</h4><div class="provider-actions"><button class="btn btn-sm" data-provider-id="${provider.id}" data-action="manage-models"><i class="fas fa-list-ul"></i> Manage Models</button><button class="btn btn-sm" data-provider-id="${provider.id}" data-action="edit-provider"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-sm btn-danger" data-provider-id="${provider.id}" data-action="delete-provider"><i class="fas fa-trash-alt"></i> Delete</button></div></div><p><small>Base URL: ${provider.baseUrl}</small></p><p><small>API Key: <span class="api-key-display">${provider.apiKey ? '********' + provider.apiKey.slice(-4) : 'Not Set'}</span></small></p>`; this.dom.providerList.appendChild(itemDiv); }); this.dom.providerList.querySelectorAll('.provider-actions button').forEach(button => { button.addEventListener('click', (e) => { const providerId = e.currentTarget.dataset.providerId; const action = e.currentTarget.dataset.action; if (action === 'edit-provider') this._openAddProviderModal(providerId); else if (action === 'delete-provider') this.handleDeleteProvider(providerId); else if (action === 'manage-models') this._openManageModelsModal(providerId); }); }); },
     
+    // Chat Folder Management Methods
+    _renderChatFoldersList: function() {
+        if (!this.dom.chatFoldersList) return;
+        this.dom.chatFoldersList.innerHTML = ''; // Clear existing list
+        const folders = this.state.settings.chatFolders || [];
+
+        if (folders.length === 0) {
+            // This case should ideally not happen if 'Default' is always present
+            const li = document.createElement('li');
+            li.textContent = 'No folders defined.';
+            this.dom.chatFoldersList.appendChild(li);
+            return;
+        }
+
+        folders.forEach(folder => {
+            const li = document.createElement('li');
+            li.dataset.folderId = folder.id;
+            li.classList.add('folder-item');
+            if (folder.id === this.state.selectedFolderId) {
+                li.classList.add('selected');
+            }
+
+            const nameSpan = document.createElement('span');
+            nameSpan.classList.add('folder-name');
+            nameSpan.textContent = folder.name;
+            li.appendChild(nameSpan);
+
+            if (folder.isSystem) {
+                const infoSpan = document.createElement('span');
+                infoSpan.classList.add('folder-info');
+                infoSpan.textContent = ' (System)';
+                li.appendChild(infoSpan);
+            }
+
+            li.addEventListener('click', () => this._handleSelectFolder(folder.id));
+            this.dom.chatFoldersList.appendChild(li);
+        });
+        this._updateFolderActionButtons();
+    },
+
+    _handleSelectFolder: function(folderId) {
+        const folder = this.state.settings.chatFolders.find(f => f.id === folderId);
+        if (!folder) return;
+
+        this.state.selectedFolderId = folderId;
+        this._renderChatFoldersList(); // Re-render to update selection highlight
+    },
+
+    _updateFolderActionButtons: function() {
+        const selectedFolder = this.state.settings.chatFolders.find(f => f.id === this.state.selectedFolderId);
+        const canRename = selectedFolder && !selectedFolder.isSystem;
+        const canDelete = selectedFolder && !selectedFolder.isSystem;
+
+        this.dom.renameFolderBtn.disabled = !canRename;
+        this.dom.deleteFolderBtn.disabled = !canDelete;
+    },
+
+    _handleShowAddFolderForm: function() {
+        this.state.editingFolderId = null; // Clear any previous editing ID
+        this.dom.newFolderNameInput.value = '';
+        this.dom.newFolderNameInput.placeholder = 'New folder name...';
+        this.dom.addFolderFormContainer.style.display = 'flex'; // Show the form
+        this.dom.newFolderNameInput.focus();
+    },
+
+    _handleShowRenameFolderForm: function() {
+        const folder = this.state.settings.chatFolders.find(f => f.id === this.state.selectedFolderId);
+        if (!folder || folder.isSystem) {
+            this._showError("Cannot rename this folder.");
+            return;
+        }
+        this.state.editingFolderId = folder.id;
+        this.dom.newFolderNameInput.value = folder.name;
+        this.dom.addFolderFormContainer.style.display = 'flex'; // Show the form
+        this.dom.newFolderNameInput.focus();
+    },
+
+    _handleCancelAddFolder: function() {
+        this.dom.addFolderFormContainer.style.display = 'none';
+        this.state.editingFolderId = null;
+    },
+
+    _handleSaveFolderPath: function() {
+        const folderName = this.dom.newFolderNameInput.value.trim();
+        if (!folderName) {
+            this._showError("Folder name cannot be empty.");
+            return;
+        }
+
+        // Check for duplicate names (excluding the folder being edited)
+        const isDuplicate = this.state.settings.chatFolders.some(
+            f => f.name.toLowerCase() === folderName.toLowerCase() && f.id !== this.state.editingFolderId
+        );
+        if (isDuplicate) {
+            this._showError(`A folder named "${folderName}" already exists.`);
+            return;
+        }
+
+        if (this.state.editingFolderId) { // Renaming existing folder
+            const folder = this.state.settings.chatFolders.find(f => f.id === this.state.editingFolderId);
+            if (folder && !folder.isSystem) {
+                folder.name = folderName;
+            } else {
+                this._showError("Could not rename folder or system folder rename attempted.");
+                this._handleCancelAddFolder();
+                return;
+            }
+        } else { // Adding new folder
+            const newFolder = {
+                id: this._generateUUID(),
+                name: folderName,
+                isSystem: false
+            };
+            this.state.settings.chatFolders.push(newFolder);
+        }
+
+        this.saveSettings();
+        this._renderChatFoldersList();
+        this._handleCancelAddFolder(); // Hide form and reset state
+        this._showToast(this.state.editingFolderId ? "Folder renamed." : "Folder added.");
+    },
+
+    _handleDeleteFolder: function() {
+        const folder = this.state.settings.chatFolders.find(f => f.id === this.state.selectedFolderId);
+        if (!folder || folder.isSystem) {
+            this._showError("Cannot delete this folder. Ensure a non-system folder is selected.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete the folder "${folder.name}"? Chats in this folder will become "unfoldered".`)) {
+            return;
+        }
+
+        this.state.settings.chatFolders = this.state.settings.chatFolders.filter(f => f.id !== this.state.selectedFolderId);
+
+        // TODO: In the future, update chats that were in this folder to have no folder_id or assign to 'default'.
+        // For now, we just delete the folder. Chats are not yet assigned to folders.
+
+        this.state.selectedFolderId = null; // Deselect
+        this.saveSettings();
+        this._renderChatFoldersList();
+        this._showToast("Folder deleted.");
+    },
+    // End Chat Folder Management Methods
+
     // System Prompt Management Methods
     _renderSystemPromptsList: function() {
         if (!this.dom.systemPromptsList) return;
