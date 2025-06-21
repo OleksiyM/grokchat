@@ -45,7 +45,13 @@ const GrokChatApp = {
         rightSidebar: null, toggleRightSidebarBtn: null, closeRightSidebarBtn: null,
 
         // Left Sidebar
-        newChatBtn: null, chatList: null, settingsBtn: null,
+        newChatBtn: null, settingsBtn: null, // chatList is removed, new elements below
+        chatSearchInput: null,
+        pinnedChatList: null,
+        foldersHeader: null, foldersContainer: null,
+        historyChatList: null,
+        archiveHeader: null, archiveChatList: null,
+
 
         // Main Content
         chatHeader: null, chatTitleDisplay: null, chatCurrentProviderModel: null,
@@ -139,8 +145,18 @@ const GrokChatApp = {
         this.dom.toggleRightSidebarBtn = document.getElementById('toggle-right-sidebar-btn');
         this.dom.closeRightSidebarBtn = document.getElementById('close-right-sidebar-btn');
         this.dom.newChatBtn = document.getElementById('new-chat-btn');
-        this.dom.chatList = document.getElementById('chat-list');
+        // this.dom.chatList = document.getElementById('chat-list'); // Old chat list
         this.dom.settingsBtn = document.getElementById('settings-btn');
+
+        // New Left Sidebar elements
+        this.dom.chatSearchInput = document.getElementById('chat-search-input');
+        this.dom.pinnedChatList = document.getElementById('pinned-chat-list');
+        this.dom.foldersHeader = document.getElementById('folders-header');
+        this.dom.foldersContainer = document.getElementById('folders-container');
+        this.dom.historyChatList = document.getElementById('history-chat-list');
+        this.dom.archiveHeader = document.getElementById('archive-header');
+        this.dom.archiveChatList = document.getElementById('archive-chat-list');
+
         this.dom.chatHeader = document.getElementById('chat-header');
         this.dom.chatTitleDisplay = document.getElementById('chat-title-display');
         this.dom.chatCurrentProviderModel = document.getElementById('chat-current-provider-model');
@@ -250,6 +266,11 @@ const GrokChatApp = {
                     defaultFolderExists.isSystem = true;
                 }
             }
+            // Initialize new UI state properties if they don't exist in loaded settings
+            this.state.settings.uiState = this.state.settings.uiState || {};
+            this.state.settings.uiState.collapsedFolders = this.state.settings.uiState.collapsedFolders || {};
+            this.state.settings.uiState.archiveFolded = this.state.settings.uiState.archiveFolded === undefined ? true : this.state.settings.uiState.archiveFolded;
+
         } else {
             this.state.settings = { ...this.config.defaultSettings };
             this.state.settings.providers = this.state.settings.providers.map(p => ({
@@ -258,6 +279,11 @@ const GrokChatApp = {
             // Ensure systemPrompts and chatFolders are initialized for new settings
             this.state.settings.systemPrompts = [...this.config.defaultSettings.systemPrompts];
             this.state.settings.chatFolders = [...this.config.defaultSettings.chatFolders];
+            // Initialize UI state for new settings
+            this.state.settings.uiState = {
+                collapsedFolders: {},
+                archiveFolded: true
+            };
         }
         console.log("Settings loaded:", this.state.settings);
     },
@@ -267,6 +293,8 @@ const GrokChatApp = {
         console.log("Settings saved:", this.state.settings);
         this._applyTheme();
         this._updateChatModelSelectors();
+        // Potentially re-render parts of UI that depend on uiState, like folder collapse states
+        // For now, renderChatList will handle applying these states.
     },
 
     _initDB: function () {
@@ -274,10 +302,29 @@ const GrokChatApp = {
             const request = indexedDB.open(this.config.dbName, this.config.dbVersion);
             request.onupgradeneeded = event => {
                 const db = event.target.result;
+                const transaction = event.target.transaction;
+                let chatStore;
                 if (!db.objectStoreNames.contains('chats')) {
-                    const chatStore = db.createObjectStore('chats', { keyPath: 'id', autoIncrement: true });
+                    chatStore = db.createObjectStore('chats', { keyPath: 'id', autoIncrement: true });
+                } else {
+                    chatStore = transaction.objectStore('chats');
+                }
+                // Add new indexes if they don't exist.
+                // This is safe to run even if the store exists from a previous version without these indexes.
+                if (!chatStore.indexNames.contains('updated_at')) {
                     chatStore.createIndex('updated_at', 'updated_at');
                 }
+                if (!chatStore.indexNames.contains('isPinned')) {
+                    chatStore.createIndex('isPinned', 'isPinned');
+                }
+                if (!chatStore.indexNames.contains('isArchived')) {
+                    chatStore.createIndex('isArchived', 'isArchived');
+                }
+                if (!chatStore.indexNames.contains('folderId')) {
+                    chatStore.createIndex('folderId', 'folderId');
+                }
+
+
                 if (!db.objectStoreNames.contains('messages')) {
                     const messageStore = db.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
                     messageStore.createIndex('chat_id', 'chat_id');
@@ -419,12 +466,26 @@ const GrokChatApp = {
             });
         }
 
-        // Chat Folder UI Listeners
+        // Chat Folder UI Listeners (in Settings)
         if (this.dom.addFolderBtn) this.dom.addFolderBtn.addEventListener('click', () => this._handleShowAddFolderForm());
         if (this.dom.renameFolderBtn) this.dom.renameFolderBtn.addEventListener('click', () => this._handleShowRenameFolderForm());
         if (this.dom.deleteFolderBtn) this.dom.deleteFolderBtn.addEventListener('click', () => this._handleDeleteFolder());
         if (this.dom.saveNewFolderBtn) this.dom.saveNewFolderBtn.addEventListener('click', () => this._handleSaveFolderPath());
         if (this.dom.cancelAddFolderBtn) this.dom.cancelAddFolderBtn.addEventListener('click', () => this._handleCancelAddFolder());
+
+        // Left Sidebar Folder/Archive Collapse Listeners
+        if (this.dom.foldersHeader) {
+            this.dom.foldersHeader.addEventListener('click', () => this._toggleMainFoldersSectionCollapse());
+        }
+        if (this.dom.archiveHeader) {
+            this.dom.archiveHeader.addEventListener('click', () => this._toggleArchiveSectionCollapse());
+        }
+        // Search input listener
+        if (this.dom.chatSearchInput) {
+            this.dom.chatSearchInput.addEventListener('input', (e) => {
+                this.renderChatList(e.target.value.trim().toLowerCase());
+            });
+        }
 
     },
 
@@ -516,13 +577,473 @@ const GrokChatApp = {
         return JSON.stringify(exportData, null, 2);
     },
 
-    renderChatList: async function () {
-        if (!this.state.db) { this.dom.chatList.innerHTML = '<li>Database not available.</li>'; this.dom.settingsChatList.innerHTML = '<li>Database not available.</li>'; return; }
-        const chats = await this.getAllChats();
-        this.dom.chatList.innerHTML = ''; this.dom.settingsChatList.innerHTML = '';
-        if (chats.length === 0) { const noChatsMsg = '<li>No chats yet. Start a new one!</li>'; this.dom.chatList.innerHTML = noChatsMsg; this.dom.settingsChatList.innerHTML = noChatsMsg; }
-        else { chats.sort((a, b) => b.updated_at - a.updated_at); chats.forEach(chat => { const li = document.createElement('li'); li.dataset.chatId = chat.id; li.classList.toggle('active-chat', chat.id === this.state.currentChatId); const titleSpan = document.createElement('span'); titleSpan.classList.add('chat-item-title'); titleSpan.textContent = chat.title || `Chat ${chat.id}`; li.appendChild(titleSpan); const actionsDiv = document.createElement('div'); actionsDiv.classList.add('chat-item-actions'); const renameBtn = document.createElement('button'); renameBtn.innerHTML = '<i class="fas fa-pen"></i>'; renameBtn.title = "Rename Chat"; renameBtn.onclick = (e) => { e.stopPropagation(); this.handleRenameChat(chat.id); }; actionsDiv.appendChild(renameBtn); const deleteBtn = document.createElement('button'); deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>'; deleteBtn.title = "Delete Chat"; deleteBtn.onclick = (e) => { e.stopPropagation(); this.handleDeleteChat(chat.id); }; actionsDiv.appendChild(deleteBtn); li.appendChild(actionsDiv); li.addEventListener('click', () => this.loadChat(chat.id)); this.dom.chatList.appendChild(li); const settingsLi = document.createElement('li'); settingsLi.textContent = chat.title || `Chat ${chat.id}`; const settingsDeleteBtn = document.createElement('button'); settingsDeleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete'; settingsDeleteBtn.classList.add('btn', 'btn-danger', 'btn-sm'); settingsDeleteBtn.onclick = () => this.handleDeleteChat(chat.id, true); settingsLi.appendChild(settingsDeleteBtn); this.dom.settingsChatList.appendChild(settingsLi); }); }
+    renderChatList: async function (searchTerm = '') { // Added searchTerm parameter with default
+        if (!this.state.db) {
+            const dbErrorMsg = '<li>Database not available.</li>';
+            if (this.dom.pinnedChatList) this.dom.pinnedChatList.innerHTML = dbErrorMsg;
+            if (this.dom.foldersContainer) this.dom.foldersContainer.innerHTML = dbErrorMsg;
+            if (this.dom.historyChatList) this.dom.historyChatList.innerHTML = dbErrorMsg;
+            if (this.dom.archiveChatList) this.dom.archiveChatList.innerHTML = dbErrorMsg;
+            if (this.dom.settingsChatList) this.dom.settingsChatList.innerHTML = dbErrorMsg;
+            return;
+        }
+
+        let chats = await this.getAllChats(); // Changed to let for potential reassignment by search
+
+        // Filter chats by search term if provided
+        if (searchTerm && searchTerm.length > 0) {
+            chats = chats.filter(chat => (chat.title || `Chat ${chat.id}`).toLowerCase().includes(searchTerm));
+        }
+
+        // Clear existing lists
+        if (this.dom.pinnedChatList) this.dom.pinnedChatList.innerHTML = '';
+        if (this.dom.foldersContainer) this.dom.foldersContainer.innerHTML = ''; // Will need more specific clearing logic for folders later
+        if (this.dom.historyChatList) this.dom.historyChatList.innerHTML = '';
+        if (this.dom.archiveChatList) this.dom.archiveChatList.innerHTML = '';
+        if (this.dom.settingsChatList) this.dom.settingsChatList.innerHTML = '';
+
+        if (chats.length === 0) {
+            const noChatsMsg = '<li>No chats yet. Start a new one!</li>';
+            if (this.dom.historyChatList) this.dom.historyChatList.innerHTML = noChatsMsg;
+            if (this.dom.settingsChatList) this.dom.settingsChatList.innerHTML = noChatsMsg;
+            // Optionally show "No pinned chats", "No archived chats" etc. in other sections
+            if (this.dom.pinnedChatList) this.dom.pinnedChatList.innerHTML = '<li>No pinned chats.</li>';
+            if (this.dom.archiveChatList) this.dom.archiveChatList.innerHTML = '<li>No archived chats.</li>';
+            // Folders container might show "No folders" or similar, handled when folder rendering is implemented
+            return;
+        }
+
+        chats.sort((a, b) => b.updated_at - a.updated_at);
+
+        // For now, populate all chats into historyChatList as a temporary measure.
+        // chats.forEach(chat => { // Old loop, will be replaced by section-specific loops
+        //     const chatItemElement = this._createChatItemElement(chat);
+        //     if (this.dom.historyChatList) this.dom.historyChatList.appendChild(chatItemElement);
+        // ...
+        // });
+
+        // Apply archive section folding state
+        if (this.dom.archiveHeader && this.dom.archiveHeader.parentElement) {
+            if (this.state.settings.uiState.archiveFolded) {
+                this.dom.archiveHeader.parentElement.classList.add('folded');
+                this.dom.archiveHeader.querySelector('i').classList.replace('fa-chevron-down', 'fa-chevron-right');
+            } else {
+                this.dom.archiveHeader.parentElement.classList.remove('folded');
+                this.dom.archiveHeader.querySelector('i').classList.replace('fa-chevron-right', 'fa-chevron-down');
+            }
+        }
+
+        // Apply Folders section folding state
+        if (this.dom.foldersHeader && this.dom.foldersHeader.parentElement) {
+            // Assuming 'foldersFolded' might be a new state property, or use a default.
+            // For now, let's assume it starts expanded or manage its state similarly to archive.
+            // Let's add a state for overall folders section: this.state.settings.uiState.foldersSectionFolded
+            if (this.state.settings.uiState.foldersSectionFolded) { // Default to false if not set
+                this.dom.foldersHeader.parentElement.classList.add('folded');
+                this.dom.foldersContainer.style.display = 'none';
+                this.dom.foldersHeader.querySelector('i').classList.replace('fa-chevron-down', 'fa-chevron-right');
+            } else {
+                this.dom.foldersHeader.parentElement.classList.remove('folded');
+                this.dom.foldersContainer.style.display = 'block';
+                this.dom.foldersHeader.querySelector('i').classList.replace('fa-chevron-right', 'fa-chevron-down');
+            }
+        }
+
+
+        const allUserChats = chats.map(chat => ({
+            ...chat,
+            isPinned: chat.isPinned || false,
+            isArchived: chat.isArchived || false,
+            folderId: chat.folderId // Keep as is, could be null or an ID
+        }));
+
+        const unarchivedChats = allUserChats.filter(chat => !chat.isArchived);
+        const archivedChatsData = allUserChats.filter(chat => chat.isArchived);
+
+        // Populate Pinned List (Unarchived and Pinned)
+        const pinnedChatsData = unarchivedChats.filter(chat => chat.isPinned);
+        if (pinnedChatsData.length > 0) {
+            pinnedChatsData.forEach(chat => {
+                if (this.dom.pinnedChatList) this.dom.pinnedChatList.appendChild(this._createChatItemElement(chat));
+            });
+        } else {
+            if (this.dom.pinnedChatList) this.dom.pinnedChatList.innerHTML = '<li>No pinned chats.</li>';
+        }
+
+        // Populate Folders
+        this.dom.foldersContainer.innerHTML = ''; // Clear previous folder contents
+        const folders = this.state.settings.chatFolders || [];
+        folders.forEach(folder => {
+            if (folder.id === 'default') return; // Skip default folder, its chats go to History if not otherwise categorized
+
+            const folderItemDiv = document.createElement('div');
+            folderItemDiv.classList.add('folder-item');
+            folderItemDiv.dataset.folderId = folder.id;
+
+            const folderHeaderH5 = document.createElement('h5');
+            folderHeaderH5.innerHTML = `<i class="fas fa-chevron-down"></i> ${folder.name}`;
+            folderHeaderH5.addEventListener('click', () => this._toggleFolderCollapse(folder.id));
+            folderItemDiv.appendChild(folderHeaderH5);
+
+            const folderChatListUl = document.createElement('ul');
+            const chatsInFolder = unarchivedChats.filter(chat => !chat.isPinned && chat.folderId === folder.id);
+
+            if (chatsInFolder.length > 0) {
+                chatsInFolder.forEach(chat => folderChatListUl.appendChild(this._createChatItemElement(chat)));
+            } else {
+                folderChatListUl.innerHTML = '<li>No chats in this folder.</li>';
+            }
+            folderItemDiv.appendChild(folderChatListUl);
+
+            // Apply individual folder collapse state
+            if (this.state.settings.uiState.collapsedFolders[folder.id]) {
+                folderItemDiv.classList.add('collapsed');
+                folderHeaderH5.querySelector('i').classList.replace('fa-chevron-down', 'fa-chevron-right');
+            }
+
+            this.dom.foldersContainer.appendChild(folderItemDiv);
+        });
+        if (folders.length <= 1 && folders.every(f => f.id === 'default')) { // Only default folder exists
+            this.dom.foldersContainer.innerHTML = '<li>No custom folders created.</li>';
+        }
+
+
+        // Populate History List (Unarchived, Not Pinned, and in 'default' or no folder)
+        const historyChatsData = unarchivedChats.filter(chat =>
+            !chat.isPinned &&
+            (!chat.folderId || chat.folderId === 'default')
+        );
+        if (historyChatsData.length > 0) {
+            historyChatsData.forEach(chat => {
+                if (this.dom.historyChatList) this.dom.historyChatList.appendChild(this._createChatItemElement(chat));
+            });
+        } else {
+            if (this.dom.historyChatList) this.dom.historyChatList.innerHTML = '<li>No active chats in history.</li>';
+        }
+
+        // Populate Archive List
+        if (archivedChatsData.length > 0) {
+            archivedChatsData.forEach(chat => {
+                if (this.dom.archiveChatList) this.dom.archiveChatList.appendChild(this._createChatItemElement(chat));
+            });
+        } else {
+            if (this.dom.archiveChatList) this.dom.archiveChatList.innerHTML = '<li>No archived chats.</li>';
+        }
+
+
+        // Populate settings chat list (this part can remain similar, uses all chats from the initial fetch, possibly filtered by search)
+        if (this.dom.settingsChatList) {
+            this.dom.settingsChatList.innerHTML = ''; // Clear before repopulating
+            // Use the 'chats' array which is the source, potentially filtered by search term
+            chats.forEach(chat_item => { // Changed 'chat' to 'chat_item' to avoid conflict if 'chat' is a global/closure var
+                const settingsLi = document.createElement('li');
+                settingsLi.textContent = chat_item.title || `Chat ${chat_item.id}`;
+                const settingsDeleteBtn = document.createElement('button');
+                settingsDeleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+                settingsDeleteBtn.classList.add('btn', 'btn-danger', 'btn-sm');
+                settingsDeleteBtn.onclick = () => this.handleDeleteChat(chat_item.id, true); // Use chat_item.id
+                settingsLi.appendChild(settingsDeleteBtn);
+                this.dom.settingsChatList.appendChild(settingsLi);
+            });
+        }
     },
+
+    _createChatItemElement: function(chat) {
+        const li = document.createElement('li');
+        li.dataset.chatId = chat.id;
+        // Ensure chat properties are defaulted if undefined (for chats loaded from older DB versions)
+        const isPinned = chat.isPinned || false;
+        const isArchived = chat.isArchived || false;
+        // folderId will be handled later
+
+        li.classList.toggle('active-chat', chat.id === this.state.currentChatId);
+        // Add classes for styling based on state, if needed (e.g., .pinned-item, .archived-item)
+        // if (isPinned) li.classList.add('pinned-chat-item');
+        // if (isArchived) li.classList.add('archived-chat-item');
+
+
+        const titleSpan = document.createElement('span');
+        titleSpan.classList.add('chat-item-title');
+        titleSpan.textContent = chat.title || `Chat ${chat.id}`;
+        li.appendChild(titleSpan);
+
+        const menuButton = document.createElement('button');
+        menuButton.classList.add('chat-item-menu-btn');
+        menuButton.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+        menuButton.title = "More options";
+        menuButton.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent chat selection
+            this._displayChatItemContextMenu(event, chat.id);
+        });
+        li.appendChild(menuButton);
+
+        li.addEventListener('click', () => this.loadChat(chat.id));
+        return li;
+    },
+
+    _displayChatItemContextMenu: function(event, chatId) {
+        event.preventDefault();
+        this._closeOpenContextMenu(); // Close any existing menu
+
+        const contextMenu = document.createElement('div');
+        contextMenu.id = 'chat-item-context-menu'; // Use ID for easier selection/styling
+        contextMenu.classList.add('chat-context-menu'); // General class for styling
+
+        // Fetch the chat details asynchronously to ensure fresh data for menu labels
+        this.getChat(chatId).then(chatDetails => {
+            const chat = chatDetails || {}; // Fallback if chatDetails is null/undefined
+            const isPinned = chat.isPinned || false;
+            const isArchived = chat.isArchived || false;
+            // folderId will be used later for "Remove from folder"
+
+            const actions = [
+                { label: 'Rename', action: () => this.handleRenameChat(chatId) },
+                { label: 'Delete', action: () => this.handleDeleteChat(chatId) },
+                { label: 'Add to Folder...', action: () => this.handleShowFolderSubmenu(chatId, event.target) },
+                { label: isPinned ? 'Unpin' : 'Pin', action: () => this.handleTogglePinChat(chatId) },
+                { label: isArchived ? 'Unarchive' : 'Archive', action: () => this.handleToggleArchiveChat(chatId) },
+                { label: 'Export', action: () => this.handleExportSingleChat(chatId) }
+            ];
+
+            actions.forEach(item => {
+                const button = document.createElement('button');
+                button.textContent = item.label;
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    item.action();
+                    this._closeOpenContextMenu();
+                });
+                contextMenu.appendChild(button);
+            });
+
+            document.body.appendChild(contextMenu);
+
+            // Position the menu
+            const clickX = event.clientX;
+            const clickY = event.clientY;
+            const menuWidth = contextMenu.offsetWidth;
+            const menuHeight = contextMenu.offsetHeight;
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            let menuX = clickX + 5;
+            let menuY = clickY + 5;
+
+            if (clickX + menuWidth > windowWidth) {
+                menuX = clickX - menuWidth - 5;
+            }
+            if (clickY + menuHeight > windowHeight) {
+                menuY = clickY - menuHeight - 5;
+            }
+            menuX = Math.max(5, menuX);
+            menuY = Math.max(5, menuY);
+
+            contextMenu.style.left = `${menuX}px`;
+            contextMenu.style.top = `${menuY}px`;
+            contextMenu.style.display = 'block';
+
+            // Add global listener to close menu
+            document.addEventListener('click', this._globalClickListenerForContextMenu, true);
+        }).catch(error => {
+            console.error("Error fetching chat details for context menu:", error);
+            this._showError("Could not display chat options. Please try again.");
+            // Ensure any partially created menu is removed if an error occurs before display
+            this._closeOpenContextMenu();
+        });
+    },
+
+    _closeOpenContextMenu: function() {
+        const existingMenu = document.getElementById('chat-item-context-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+        document.removeEventListener('click', this._globalClickListenerForContextMenu, true);
+    },
+
+    _globalClickListenerForContextMenu: function(event) {
+        const menu = document.getElementById('chat-item-context-menu');
+        // If the click is outside the menu and not on a menu button itself (which would be handled by stopPropagation)
+        if (menu && !menu.contains(event.target)) {
+            GrokChatApp._closeOpenContextMenu();
+        }
+    },
+
+    // Placeholder handlers (to be implemented or connected later)
+    handleShowFolderSubmenu: async function(chatId, targetElement) { // Added async
+        console.log(`Show folder submenu for chat ${chatId}`, targetElement);
+        // this._showToast("Folder submenu not yet implemented."); // Removed toast
+        // Implementation will involve creating another small div positioned relative to targetElement
+        this._closeOpenContextMenu(); // Close main context menu first
+        const FOLDER_SUBMENU_ID = 'chat-item-folder-submenu';
+        this._closeOpenFolderSubmenu(); // Close any existing folder submenu
+
+        const submenu = document.createElement('div');
+        submenu.id = FOLDER_SUBMENU_ID;
+        submenu.classList.add('chat-context-menu', 'folder-submenu'); // Reuse styling
+
+        const chat = await this.getChat(chatId); // Fetch chat to see its current folder
+
+        // Add "Remove from folder" option if chat is in a folder
+        if (chat && chat.folderId && chat.folderId !== 'default') {
+            const currentFolder = this.state.settings.chatFolders.find(f => f.id === chat.folderId);
+            const removeFromFolderBtn = document.createElement('button');
+            removeFromFolderBtn.textContent = `Remove from "${currentFolder ? currentFolder.name : 'Folder'}"`;
+            removeFromFolderBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await this.handleRemoveFromFolder(chatId);
+                this._closeOpenFolderSubmenu();
+                this._closeOpenContextMenu(); // Ensure main menu also closes
+            });
+            submenu.appendChild(removeFromFolderBtn);
+
+            const separator = document.createElement('hr'); // Visual separator
+            submenu.appendChild(separator);
+        }
+
+        const availableFolders = this.state.settings.chatFolders.filter(f => !f.isSystem); // Exclude 'Default' system folder
+        if (availableFolders.length > 0) {
+            availableFolders.forEach(folder => {
+                if (chat && chat.folderId === folder.id) return; // Don't list current folder as an option to move to
+
+                const folderButton = document.createElement('button');
+                folderButton.textContent = folder.name;
+                folderButton.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await this.handleAddToFolder(chatId, folder.id);
+                    this._closeOpenFolderSubmenu();
+                    this._closeOpenContextMenu(); // Ensure main menu also closes
+                });
+                submenu.appendChild(folderButton);
+            });
+        } else {
+            const noFoldersMsg = document.createElement('span');
+            noFoldersMsg.textContent = 'No custom folders available.';
+            noFoldersMsg.style.padding = '8px 15px';
+            noFoldersMsg.style.display = 'block';
+            noFoldersMsg.style.opacity = '0.7';
+            submenu.appendChild(noFoldersMsg);
+        }
+
+
+        document.body.appendChild(submenu);
+
+        // Position submenu relative to the "Add to Folder..." button (targetElement)
+        const mainMenuItemRect = targetElement.getBoundingClientRect();
+        submenu.style.left = `${mainMenuItemRect.right + 5}px`; // Position to the right
+        submenu.style.top = `${mainMenuItemRect.top}px`;       // Align top
+        submenu.style.display = 'block';
+
+        // Add global listener to close submenu
+        // Use a named function for the listener so it can be removed.
+        this._folderSubmenuClickListener = (event) => {
+            if (!submenu.contains(event.target)) {
+                this._closeOpenFolderSubmenu();
+            }
+        };
+        document.addEventListener('click', this._folderSubmenuClickListener, true);
+
+    },
+
+    _closeOpenFolderSubmenu: function() {
+        const FOLDER_SUBMENU_ID = 'chat-item-folder-submenu';
+        const existingSubmenu = document.getElementById(FOLDER_SUBMENU_ID);
+        if (existingSubmenu) {
+            existingSubmenu.remove();
+        }
+        if (this._folderSubmenuClickListener) {
+            document.removeEventListener('click', this._folderSubmenuClickListener, true);
+            this._folderSubmenuClickListener = null;
+        }
+    },
+
+    handleAddToFolder: async function(chatId, folderId) {
+        const chat = await this.getChat(chatId);
+        if (chat) {
+            chat.folderId = folderId;
+            chat.updated_at = Date.now(); // Mark as updated
+            await this.updateChat(chat);
+            await this.renderChatList();
+            this._showToast("Chat moved to folder.");
+        }
+    },
+
+    handleRemoveFromFolder: async function(chatId) {
+        const chat = await this.getChat(chatId);
+        if (chat) {
+            chat.folderId = null; // Or 'default' if explicitly assigning to default
+            chat.updated_at = Date.now();
+            await this.updateChat(chat);
+            await this.renderChatList();
+            this._showToast("Chat removed from folder.");
+        }
+    },
+
+    _toggleFolderCollapse: function(folderId) {
+        this.state.settings.uiState.collapsedFolders[folderId] = !this.state.settings.uiState.collapsedFolders[folderId];
+        this.saveSettings(); // Save the new collapse state
+        this.renderChatList(); // Re-render to apply the change visually
+    },
+
+    _toggleMainFoldersSectionCollapse: function() {
+        this.state.settings.uiState.foldersSectionFolded = !(this.state.settings.uiState.foldersSectionFolded || false);
+        this.saveSettings();
+        this.renderChatList();
+    },
+
+    _toggleArchiveSectionCollapse: function() {
+        this.state.settings.uiState.archiveFolded = !(this.state.settings.uiState.archiveFolded || false);
+        this.saveSettings();
+        this.renderChatList();
+    },
+
+    handleTogglePinChat: async function(chatId) {
+        console.log(`Toggle pin for chat ${chatId}`);
+        const chat = await this.getChat(chatId);
+        if (chat) {
+            chat.isPinned = !(chat.isPinned || false); // Toggle, defaulting to false if undefined
+            if (chat.isPinned && chat.isArchived) { // If pinning an archived chat, unarchive it
+                chat.isArchived = false;
+                this._showToast("Chat unarchived and pinned.");
+            }
+            chat.updated_at = Date.now(); // Consider if pinning should update timestamp
+            await this.updateChat(chat);
+            await this.renderChatList();
+            // No toast here, re-render shows the change. Or a subtle one:
+            // this._showToast(`Chat ${chat.isPinned ? 'pinned' : 'unpinned'}.`);
+        }
+    },
+    handleToggleArchiveChat: async function(chatId) {
+        console.log(`Toggle archive for chat ${chatId}`);
+        const chat = await this.getChat(chatId);
+        if (chat) {
+            chat.isArchived = !(chat.isArchived || false); // Toggle
+            if (chat.isArchived && chat.isPinned) { // If archiving a pinned chat, unpin it
+                chat.isPinned = false;
+                this._showToast("Chat unpinned and archived.");
+            }
+            chat.updated_at = Date.now(); // Consider if archiving should update timestamp
+            await this.updateChat(chat);
+            await this.renderChatList();
+            // this._showToast(`Chat ${chat.isArchived ? 'archived' : 'unarchived'}.`);
+        }
+    },
+    handleExportSingleChat: function(chatId) {
+        console.log(`Export single chat ${chatId}`);
+        // Actual implementation in Part 5
+        if (!this.state.currentChatId || this.state.currentChatId !== chatId) {
+            // If the chat to export is not the current one, we might need to load its messages
+            // For now, let's assume it works like the main export button which uses currentChatId
+            // Or, we make it simple and say "select chat first" or load its data.
+            // For simplicity now, use the existing handleExportChat logic.
+            const previousChatId = this.state.currentChatId;
+            this.state.currentChatId = chatId; // Temporarily set for export
+            this.handleExportChat(); // This uses this.state.currentChatId
+            this.state.currentChatId = previousChatId; // Restore
+        } else {
+            this.handleExportChat();
+        }
+    },
+
 
     renderMessages: async function (chatId) {
         if (!this.state.db || !chatId) { this.dom.messageArea.innerHTML = '<div class="message welcome-message"><p>Select or start a chat to see messages.</p></div>'; return; }
@@ -858,7 +1379,20 @@ const GrokChatApp = {
         const defaultProviderId = this.dom.providerSelectorChat.value || this.state.settings.selectedProviderId || (this.state.settings.providers.find(p => p.apiKey) ? this.state.settings.providers.find(p => p.apiKey).id : null);
         const defaultModelId = this.dom.modelSelectorChat.value || this.state.settings.selectedModelId;
         if (!defaultProviderId || !defaultModelId) { this._showError("Please select a default provider and model in the chat input area or settings before creating a new chat."); return; }
-        const newChat = { title: `New Chat ${new Date().toLocaleTimeString()}`, created_at: Date.now(), updated_at: Date.now(), default_provider_id: defaultProviderId, default_model_id: defaultModelId, system_prompt: this.config.defaultChatParams.systemPrompt, temperature: this.config.defaultChatParams.temperature, max_tokens: this.config.defaultChatParams.max_tokens, top_p: this.config.defaultChatParams.top_p };
+        const newChat = {
+            title: `New Chat ${new Date().toLocaleTimeString()}`,
+            created_at: Date.now(),
+            updated_at: Date.now(),
+            default_provider_id: defaultProviderId,
+            default_model_id: defaultModelId,
+            system_prompt: this.config.defaultChatParams.systemPrompt,
+            temperature: this.config.defaultChatParams.temperature,
+            max_tokens: this.config.defaultChatParams.max_tokens,
+            top_p: this.config.defaultChatParams.top_p,
+            isPinned: false,      // Initialize new property
+            isArchived: false,    // Initialize new property
+            folderId: null        // Initialize new property (or 'default' if preferred)
+        };
         const newChatId = await this.addChat(newChat);
         await this.loadChat(newChatId);
         this.dom.messageInput.value = '';
@@ -1476,9 +2010,10 @@ const GrokChatApp = {
         this._renderChatFoldersList();
         this._handleCancelAddFolder(); // Hide form and reset state
         this._showToast(this.state.editingFolderId ? "Folder renamed." : "Folder added.");
+        this.renderChatList(); // Refresh left panel
     },
 
-    _handleDeleteFolder: function() {
+    _handleDeleteFolder: async function() { // Make async
         const folder = this.state.settings.chatFolders.find(f => f.id === this.state.selectedFolderId);
         if (!folder || folder.isSystem) {
             this._showError("Cannot delete this folder. Ensure a non-system folder is selected.");
@@ -1489,15 +2024,29 @@ const GrokChatApp = {
             return;
         }
 
-        this.state.settings.chatFolders = this.state.settings.chatFolders.filter(f => f.id !== this.state.selectedFolderId);
+        const folderIdToDelete = this.state.selectedFolderId;
 
-        // TODO: In the future, update chats that were in this folder to have no folder_id or assign to 'default'.
-        // For now, we just delete the folder. Chats are not yet assigned to folders.
+        // Update chats that were in this folder
+        const chatsToUpdate = await this.getAllChats();
+        const updatePromises = [];
+        chatsToUpdate.forEach(chat => {
+            if (chat.folderId === folderIdToDelete) {
+                chat.folderId = null; // Move to history (no folder)
+                chat.updated_at = Date.now(); // Optionally update timestamp
+                updatePromises.push(this.updateChat(chat));
+            }
+        });
+
+        await Promise.all(updatePromises);
+
+        // Now, remove the folder definition
+        this.state.settings.chatFolders = this.state.settings.chatFolders.filter(f => f.id !== folderIdToDelete);
 
         this.state.selectedFolderId = null; // Deselect
-        this.saveSettings();
-        this._renderChatFoldersList();
-        this._showToast("Folder deleted.");
+        this.saveSettings(); // Save updated folders list and potentially updated chats (via updateChat)
+        this._renderChatFoldersList(); // Update settings modal UI
+        this._showToast("Folder deleted and chats moved to history.");
+        this.renderChatList(); // Refresh left panel to show chats moved to history
     },
     // End Chat Folder Management Methods
 
