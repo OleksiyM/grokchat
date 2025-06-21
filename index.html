@@ -140,6 +140,7 @@
                     <button class="tab-link active" data-tab="general-settings">General</button>
                     <button class="tab-link" data-tab="providers-settings">Providers & Models</button>
                     <button class="tab-link" data-tab="system-prompts-settings">System Prompts</button>
+                    <button class="tab-link" data-tab="chats-settings">Chats</button>
                     <button class="tab-link" data-tab="history-settings">History</button>
                     <button class="tab-link" data-tab="about-settings">About</button>
                 </div>
@@ -197,6 +198,29 @@
                             <button type="button" id="cancel-edit-system-prompt-btn" class="btn">Cancel</button>
                         </div>
                     </form>
+                </div>
+
+                <div id="chats-settings" class="tab-content">
+                    <h3>Chat Folders</h3>
+                    <div class="form-group">
+                        <label for="chat-folders-list">Folders:</label>
+                        <ul id="chat-folders-list" class="item-list">
+                            <!-- Folder items will be populated here -->
+                            <li><span class="folder-name">Default</span> <span class="folder-info">(Cannot be deleted)</span></li>
+                        </ul>
+                    </div>
+                    <div class="form-group" id="add-folder-form-container">
+                        <input type="text" id="new-folder-name-input" placeholder="New folder name...">
+                        <button id="save-new-folder-btn" class="btn btn-primary btn-sm">Save</button>
+                        <button id="cancel-add-folder-btn" class="btn btn-sm">Cancel</button>
+                    </div>
+                    <div class="folder-actions">
+                        <button id="add-folder-btn" class="btn"><i class="fas fa-plus"></i> Add Folder</button>
+                        <button id="rename-folder-btn" class="btn" disabled><i class="fas fa-edit"></i> Rename Selected</button>
+                        <button id="delete-folder-btn" class="btn btn-danger" disabled><i class="fas fa-trash-alt"></i> Delete Selected</button>
+                    </div>
+                    <hr>
+                    <!-- Future: Assign chat to folder section -->
                 </div>
 
                 <div id="history-settings" class="tab-content">
