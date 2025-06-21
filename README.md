@@ -4,7 +4,7 @@
 
 [![GrokChat Logo](https://img.shields.io/badge/GrokChat-Web%20Client-blue)](https://grokchat.pages.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.11-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.1.12-orange)](CHANGELOG.md)
 
 </div>
 
@@ -101,13 +101,20 @@ To manage system prompts:
 3. Give it a name and enter your prompt text
 4. Save to make it available in the chat dropdown
 
-### Managing Chats
+### Managing Chats Messages
 
-- **Rename a Chat**: Click the pencil icon next to a chat in the sidebar
-- **Delete a Chat**: Click the trash icon next to a chat
 - **Delete Any Message**: Click the trash icon next to any message to remove it from the chat history.
 - **Clear All History**: Go to Settings > History tab > "Clear All History"
 - **Export Chat**: Go to Settings > History tab > "Export Chat"
+
+### Chat Organization Features
+- **Folder Management**: Organize chats into custom folders (System 'Default' folder is protected)
+  - Go to Settings > Chats to manage folders
+- **Pinned Chats**: Keep important chats easily accessible in dedicated section
+- **Archive**: Hide inactive chats without deleting them
+- **Search**: Find chats across all sections (Pinned, Folders, History, Archive)
+- **Context Menu**: Click 3 dot menu on any chat for quick actions via menu 
+  - Rename, Delete, Move to/from Folder, Pin/Unpin, Archive/Unarchive, Export
 
 ### Advanced Features
 - **In-place Message Editing**: Click the edit icon next to a message to modify its content directly. Edited messages will be marked with an "*edited*" label.

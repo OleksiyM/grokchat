@@ -1,6 +1,22 @@
 # Changelog
 
-## [0.1.11] Current version
+## [0.1.12]
+
+- New 'Chats' tab in settings modal with folder management (add/rename/delete)
+- Redesigned left sidebar with:
+  - Search functionality
+  - Pinned chats section
+  - Collapsible folders organization
+  - Archive section
+- Context menu for chat items with:
+  - Rename/Delete options
+  - Folder management
+  - Pin/Archive toggles
+  - Export functionality
+- Persistent UI state for folders/archive collapse
+- Updated database schema for pinned/archived/folder attributes
+
+## [0.1.11]
 
 - UI Improvements:
    - Enhanced message edit window sizing and responsive behavior
