@@ -18,16 +18,37 @@
         <!-- Left Sidebar -->
         <aside id="left-sidebar" class="sidebar left-sidebar">
             <div class="sidebar-header">
-                <button id="new-chat-btn" class="btn icon-btn" title="New Chat"><i class="fas fa-plus"></i><span class="btn-text"> New
-                    Chat</span></button>
-                <button id="toggle-left-sidebar-btn" class="btn icon-btn" title="Toggle Sidebar"><i
-                        class="fas fa-bars"></i></button>
+                <button id="new-chat-btn" class="btn icon-btn" title="New Chat"><i class="fas fa-plus"></i><span class="btn-text"> New Chat</span></button>
+                <button id="toggle-left-sidebar-btn" class="btn icon-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
             </div>
-            <nav id="chat-list-container">
-                <h3>Chats</h3>
-                <ul id="chat-list">
-                    <!-- Chat items will be populated here -->
-                </ul>
+            <div id="left-sidebar-search-container" class="sidebar-section">
+                <input type="text" id="chat-search-input" placeholder="Search chats...">
+            </div>
+            <nav id="left-sidebar-nav-container">
+                <div id="pinned-section" class="sidebar-section">
+                    <h4>Pinned</h4>
+                    <ul id="pinned-chat-list">
+                        <!-- Pinned chat items will be populated here -->
+                    </ul>
+                </div>
+                <div id="folders-section" class="sidebar-section">
+                    <h4 id="folders-header" class="foldable-header"><i class="fas fa-chevron-down"></i> Folders</h4>
+                    <div id="folders-container">
+                        <!-- Folder items and their chat lists will be populated here -->
+                    </div>
+                </div>
+                <div id="history-section" class="sidebar-section">
+                    <h4>History</h4>
+                    <ul id="history-chat-list">
+                        <!-- History chat items will be populated here -->
+                    </ul>
+                </div>
+                <div id="archive-section" class="sidebar-section foldable-section folded">
+                    <h4 id="archive-header" class="foldable-header"><i class="fas fa-chevron-right"></i> Archive</h4>
+                    <ul id="archive-chat-list">
+                        <!-- Archived chat items will be populated here -->
+                    </ul>
+                </div>
             </nav>
             <div class="sidebar-footer">
                 <button id="settings-btn" class="btn icon-btn" title="Settings"><i class="fas fa-cog"></i><span class="btn-text">

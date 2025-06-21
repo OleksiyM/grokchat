@@ -217,13 +217,75 @@ body {
     opacity: 0.7;
 }
 
-#chat-list,
-#settings-chat-list {
+/* New Left Sidebar Structure Styling */
+#left-sidebar-search-container {
+    padding: 0 0 10px 0; /* Padding around search input */
+    flex-shrink: 0;
+}
+
+#chat-search-input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--current-input-border);
+    background-color: var(--current-input-bg);
+    color: var(--current-text-color);
+    font-size: 0.9em;
+}
+
+#left-sidebar-nav-container {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.sidebar-section {
+    margin-bottom: 15px;
+}
+
+.sidebar-section h4 {
+    margin-bottom: 8px;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--current-text-color);
+    opacity: 0.8;
+    display: flex; /* For aligning icon with text */
+    align-items: center; /* For aligning icon with text */
+}
+
+.sidebar-section h4.foldable-header {
+    cursor: pointer;
+}
+
+.sidebar-section h4.foldable-header i {
+    margin-right: 8px;
+    transition: transform 0.2s ease-in-out;
+    font-size: 0.8em; /* Make chevron smaller than text */
+}
+
+.sidebar-section.folded > ul,
+.sidebar-section.folded > div { /* For folders-container */
+    display: none;
+}
+
+.sidebar-section.folded h4.foldable-header i {
+    transform: rotate(-90deg);
+}
+
+
+#pinned-chat-list,
+#history-chat-list,
+#archive-chat-list,
+#folders-container ul, /* For ULs inside folders */
+#settings-chat-list { /* Keep settings list styled similarly */
     list-style: none;
     padding: 0;
 }
 
-#chat-list li,
+#pinned-chat-list li,
+#history-chat-list li,
+#archive-chat-list li,
+#folders-container ul li,
 #settings-chat-list li {
     padding: 10px;
     margin-bottom: 5px;
@@ -235,28 +297,40 @@ body {
     transition: background-color 0.2s;
 }
 
-#chat-list li:hover {
+#pinned-chat-list li:hover,
+#history-chat-list li:hover,
+#archive-chat-list li:hover,
+#folders-container ul li:hover {
     background-color: rgba(0, 0, 0, 0.1);
-    /* Adjust based on theme */
 }
 
-html.dark-theme #chat-list li:hover {
+html.dark-theme #pinned-chat-list li:hover,
+html.dark-theme #history-chat-list li:hover,
+html.dark-theme #archive-chat-list li:hover,
+html.dark-theme #folders-container ul li:hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-#chat-list li.active-chat {
+#pinned-chat-list li.active-chat,
+#history-chat-list li.active-chat,
+#archive-chat-list li.active-chat,
+#folders-container ul li.active-chat {
     background-color: var(--current-btn-bg);
     color: var(--current-btn-text);
 }
 
-#chat-list li .chat-item-title {
+#pinned-chat-list li .chat-item-title,
+#history-chat-list li .chat-item-title,
+#archive-chat-list li .chat-item-title,
+#folders-container ul li .chat-item-title {
     flex-grow: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.95em; /* Slightly smaller if desired */
 }
 
-.chat-item-actions button {
+.chat-item-actions button { /* This style can be common if structure is similar */
     background: none;
     border: none;
     color: var(--current-icon-color);
@@ -269,10 +343,156 @@ html.dark-theme #chat-list li:hover {
     opacity: 1;
 }
 
-#chat-list li.active-chat .chat-item-actions button {
+#pinned-chat-list li.active-chat .chat-item-actions button,
+#history-chat-list li.active-chat .chat-item-actions button,
+#archive-chat-list li.active-chat .chat-item-actions button,
+#folders-container ul li.active-chat .chat-item-actions button {
     color: var(--current-btn-text);
-    /* Ensure visibility on active chat background */
 }
+
+/* Styling for folder items within folders-container */
+#folders-container .folder-item {
+    margin-bottom: 5px; /* Space between folders */
+}
+
+#folders-container .folder-item h5 { /* Folder name header */
+    padding: 8px 10px;
+    background-color: rgba(0,0,0,0.03); /* Subtle background for folder header */
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+}
+html.dark-theme #folders-container .folder-item h5 {
+    background-color: rgba(255,255,255,0.03);
+}
+
+#folders-container .folder-item h5 i {
+    margin-right: 6px;
+    transition: transform 0.2s ease-in-out;
+    font-size: 0.8em;
+}
+
+#folders-container .folder-item.collapsed > ul {
+    display: none;
+}
+
+#folders-container .folder-item.collapsed h5 i {
+    transform: rotate(-90deg);
+}
+
+#folders-container .folder-item ul { /* Chat list within a folder */
+    padding-left: 15px; /* Indent chats within a folder */
+    /* margin-top: 5px; */ /* No extra margin needed with current list item margins */
+}
+
+/* Chat Item 3-Dot Menu Button */
+.chat-item-menu-btn {
+    background: none;
+    border: none;
+    color: var(--current-icon-color);
+    cursor: pointer;
+    padding: 5px 8px; /* Adjust padding to make clickable area decent */
+    font-size: 0.9em; /* Icon size */
+    opacity: 0.6;
+    margin-left: 5px; /* Space from title */
+    border-radius: 4px;
+}
+
+.chat-item-menu-btn:hover {
+    opacity: 1;
+    background-color: rgba(0,0,0,0.1);
+}
+html.dark-theme .chat-item-menu-btn:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+#pinned-chat-list li.active-chat .chat-item-menu-btn,
+#history-chat-list li.active-chat .chat-item-menu-btn,
+#archive-chat-list li.active-chat .chat-item-menu-btn,
+#folders-container ul li.active-chat .chat-item-menu-btn {
+    color: var(--current-btn-text); /* Ensure icon is visible on active background */
+    opacity: 0.8;
+}
+#pinned-chat-list li.active-chat .chat-item-menu-btn:hover,
+#history-chat-list li.active-chat .chat-item-menu-btn:hover,
+#archive-chat-list li.active-chat .chat-item-menu-btn:hover,
+#folders-container ul li.active-chat .chat-item-menu-btn:hover {
+    opacity: 1;
+    background-color: rgba(255,255,255,0.2); /* Slightly different hover on active for contrast */
+}
+
+
+/* Chat Item Context Menu & Submenu */
+.chat-context-menu {
+    position: fixed; /* Position relative to viewport */
+    z-index: 1100; /* Above most other elements */
+    background-color: var(--current-modal-content-bg);
+    border: 1px solid var(--current-border-color);
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    padding: 5px 0; /* Vertical padding for the menu itself */
+    display: none; /* Hidden by default, shown by JS */
+    min-width: 150px; /* Minimum width of the menu */
+}
+
+.chat-context-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px 15px; /* Padding for menu items */
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--current-text-color);
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+.chat-context-menu button:hover {
+    background-color: var(--current-btn-bg); /* Use primary button color for hover */
+    color: var(--current-btn-text);
+}
+
+.chat-context-menu hr {
+    margin: 5px 0;
+    border: none;
+    border-top: 1px solid var(--current-border-color);
+}
+
+.chat-context-menu .folder-submenu { /* Specific styling for folder submenu if needed */
+    /* Example: slightly different padding or max-height if it can get long */
+    max-height: 200px; /* Limit height if many folders */
+    overflow-y: auto;
+}
+
+
+/* Ensure search input looks good within its container */
+#left-sidebar-search-container {
+    position: sticky; /* Make search bar sticky at the top of the scrollable nav area */
+    top: 0;
+    background-color: var(--current-sidebar-bg); /* Match sidebar background */
+    z-index: 10; /* Keep it above scrolling content within the nav */
+    padding-bottom: 10px; /* Keep existing padding */
+    padding-top: 10px; /* Add some padding at the top too */
+}
+
+/* Refine folder item styling for clarity */
+#folders-container .folder-item h5 {
+    font-weight: normal; /* Make it less prominent than main section headers */
+    opacity: 0.9;
+}
+html.dark-theme #folders-container .folder-item h5 {
+    background-color: rgba(255,255,255,0.04); /* Slightly darker for dark theme */
+}
+
+#folders-container .folder-item h5:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+html.dark-theme #folders-container .folder-item h5:hover {
+    background-color: rgba(255,255,255,0.07);
+}
+
 
 .sidebar-footer {
     margin-top: auto;
