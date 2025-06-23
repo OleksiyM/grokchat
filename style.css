@@ -1305,6 +1305,11 @@ html.dark-theme .message-actions button:hover {
     .message {
         max-width: 95%;
     }
+
+    #chat-title-display,
+    #chat-current-provider-model {
+        display: none;
+    }
 }
 
 /* Scrollbar Styling (Optional, Webkit specific) */
