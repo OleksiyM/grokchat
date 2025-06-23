@@ -234,6 +234,11 @@ const GrokChatApp = {
         this.dom.importChatsBtn = document.getElementById('import-chats-btn');
         this.dom.importChatsFileInput = document.getElementById('import-chats-file-input');
 
+        // App Settings Import/Export UI
+        this.dom.exportSettingsBtn = document.getElementById('export-settings-btn');
+        this.dom.importSettingsBtn = document.getElementById('import-settings-btn');
+        this.dom.importSettingsFileInput = document.getElementById('import-settings-file-input');
+
         this.dom.addFolderBtn = document.getElementById('add-folder-btn');
         this.dom.renameFolderBtn = document.getElementById('rename-folder-btn');
         this.dom.deleteFolderBtn = document.getElementById('delete-folder-btn');
@@ -523,6 +528,140 @@ const GrokChatApp = {
             this.dom.importChatsFileInput.addEventListener('change', (e) => this.handleImportFileSelected(e));
         }
 
+        // App Settings Import/Export Listeners
+        if (this.dom.exportSettingsBtn) {
+            this.dom.exportSettingsBtn.addEventListener('click', () => this._handleExportSettings());
+        }
+        if (this.dom.importSettingsBtn) {
+            this.dom.importSettingsBtn.addEventListener('click', () => this._handleImportSettingsClick());
+        }
+        if (this.dom.importSettingsFileInput) {
+            this.dom.importSettingsFileInput.addEventListener('change', (e) => this._handleImportSettingsFileSelected(e));
+        }
+
+    },
+
+    _handleExportSettings: function() {
+        try {
+            // Create a deep copy to avoid modifying the actual state if we need to filter/transform
+            const settingsToExport = JSON.parse(JSON.stringify(this.state.settings));
+
+            // Optionally, remove or obfuscate sensitive data if necessary, e.g., API keys
+            // For now, we export all settings as is.
+            // Example:
+            // if (settingsToExport.providers) {
+            //     settingsToExport.providers.forEach(p => { delete p.apiKey; });
+            // }
+
+            const jsonContent = JSON.stringify(settingsToExport, null, 2);
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+            const filename = `GrokChat_Settings_${timestamp}.json`;
+
+            this._triggerDownload(jsonContent, filename, 'application/json');
+            this._showToast("Settings exported successfully!");
+        } catch (error) {
+            console.error("Error exporting settings:", error);
+            this._showError("Failed to export settings: " + error.message);
+        }
+    },
+
+    _handleImportSettingsClick: function() {
+        if (this.dom.importSettingsFileInput) {
+            this.dom.importSettingsFileInput.click();
+        }
+    },
+
+    _handleImportSettingsFileSelected: function(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        // Reset file input to allow importing the same file again if needed
+        event.target.value = null;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const importedSettingsText = e.target.result;
+                const parsedSettings = JSON.parse(importedSettingsText);
+
+                if (typeof parsedSettings !== 'object' || parsedSettings === null) {
+                    this._showError("Invalid settings file: Content is not a valid JSON object.");
+                    return;
+                }
+
+                // Basic validation: Check for a few key properties to ensure it's likely a settings file
+                // More robust validation could involve checking types of each key, etc.
+                const essentialKeys = ['theme', 'providers', 'systemPrompts', 'chatFolders'];
+                for (const key of essentialKeys) {
+                    if (!(key in parsedSettings)) {
+                        // Allow missing keys if they are present in defaultSettings (they will be merged)
+                        // However, if a key like 'providers' is totally missing and it's crucial,
+                        // it might indicate a corrupted or incorrect settings file.
+                        // For now, we'll be somewhat lenient and rely on the merge with defaults.
+                        console.warn(`Imported settings missing key: ${key}. Default will be used if available.`);
+                    }
+                }
+
+                // Merge strategy:
+                // Start with default settings to ensure all keys are present.
+                // Then, overwrite with imported settings.
+                // This ensures that if the imported file is from an older version and misses new settings,
+                // those new settings get their default values.
+                const newSettings = { ...this.config.defaultSettings };
+
+                // Deep merge for nested objects like 'uiState'
+                // For arrays like 'providers', 'systemPrompts', 'chatFolders', the imported array replaces the default.
+                for (const key in parsedSettings) {
+                    if (parsedSettings.hasOwnProperty(key)) {
+                        if (Array.isArray(parsedSettings[key])) {
+                            newSettings[key] = JSON.parse(JSON.stringify(parsedSettings[key])); // Deep copy arrays
+                        } else if (typeof parsedSettings[key] === 'object' && parsedSettings[key] !== null && newSettings[key] && typeof newSettings[key] === 'object') {
+                            // Deep merge for objects like uiState
+                            newSettings[key] = { ...newSettings[key], ...JSON.parse(JSON.stringify(parsedSettings[key])) };
+                        } else {
+                            newSettings[key] = parsedSettings[key];
+                        }
+                    }
+                }
+
+                // Ensure essential arrays are initialized if not present in imported file (already handled by defaulting above)
+                newSettings.providers = newSettings.providers || [];
+                newSettings.systemPrompts = newSettings.systemPrompts || [];
+                newSettings.chatFolders = newSettings.chatFolders || [];
+                 // Ensure 'Default' folder exists and is system folder
+                let defaultFolder = newSettings.chatFolders.find(f => f.id === 'default');
+                if (!defaultFolder) {
+                    newSettings.chatFolders.unshift({ id: 'default', name: 'Default', isSystem: true });
+                } else {
+                    defaultFolder.isSystem = true; // Ensure it's marked as system
+                }
+
+
+                this.state.settings = newSettings;
+
+                this.saveSettings(); // Persist to localStorage and apply theme etc.
+                this._populateSettingsForm(); // Update the settings modal UI
+                this._applyTheme(); // Apply theme immediately
+                this._updateChatModelSelectors(); // Update provider/model dropdowns
+                await this.renderChatList(); // Re-render chat list (folders might have changed)
+
+                this._showToast("Settings imported successfully!");
+
+            } catch (error) {
+                console.error("Error importing settings:", error);
+                this._showError(`Failed to import settings: ${error.message}`);
+            }
+        };
+
+        reader.onerror = (error) => {
+            console.error("Error reading settings import file:", error);
+            this._showError("Failed to read the settings import file.");
+        };
+
+        reader.readAsText(file);
     },
 
     handleExportAllChats: async function () {

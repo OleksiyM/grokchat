@@ -197,6 +197,16 @@
                             <option value="plaintext">Plain Text</option>
                         </select>
                     </div>
+                    <hr style="margin-top: 20px; margin-bottom: 20px;">
+                    <h4>App Data</h4>
+                    <div class="form-group">
+                        <button id="export-settings-btn" class="btn"><i class="fas fa-file-export"></i> Export All App Settings</button>
+                    </div>
+                    <div class="form-group">
+                        <button id="import-settings-btn" class="btn"><i class="fas fa-file-import"></i> Import All App Settings</button>
+                        <input type="file" id="import-settings-file-input" accept=".json" style="display: none;">
+                        <small>Importing settings will overwrite existing settings.</small>
+                    </div>
                 </div>
 
                 <div id="providers-settings" class="tab-content">
