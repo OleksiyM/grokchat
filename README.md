@@ -4,7 +4,7 @@
 
 [![GrokChat Logo](https://img.shields.io/badge/GrokChat-Web%20Client-blue)](https://grokchat.pages.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.12-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.1.13-orange)](CHANGELOG.md)
 
 </div>
 
@@ -122,6 +122,11 @@ To manage system prompts:
 - **Copy Message**: Click the copy icon next to a message. Format options can be set in the Settings -> General:
   - Markdown
   - Plain Text
+- **Copy Current Chat**: Quickly duplicate your current conversation with all messages and settings using the "Copy Chat" button in the chat header
+- **Unlimited Context**: Enable in General Settings to bypass default context window limits (may increase API costs)
+- **Data Export/Import**:
+  - Export/Import chat history (Settings > History tab)
+  - Export/Import application settings (Settings > General tab)
 - **Information about Response**: Mouse hover over the info icon next to a message. You will see the technical details of the response.
 ```text
 Provider: <Provider name>

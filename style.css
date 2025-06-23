@@ -135,8 +135,10 @@ body {
 }
 
 .left-sidebar.collapsed .btn i { /* Ensures icon has no extra margin when text is hidden */
-    margin-right: 0 !important; 
+    margin-right: 0; 
 }
+
+
 
 .left-sidebar.collapsed .sidebar-header .btn,
 .left-sidebar.collapsed .sidebar-footer .btn {
@@ -153,6 +155,10 @@ body {
 /* Keep toggle button specific centering if needed, usually text-align:center is enough for single icon */
 .left-sidebar.collapsed .sidebar-header #toggle-left-sidebar-btn {
     /* Default centering usually works as it only contains an icon */
+}
+
+.btn i {
+    margin-right: 5px;
 }
 
 
