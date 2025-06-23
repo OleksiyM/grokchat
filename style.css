@@ -1036,6 +1036,18 @@ html.dark-theme .message-actions button:hover {
     width: 100%;
 }
 
+/* Styling for checkbox labels to align them nicely */
+.form-group label[for*="checkbox"] {
+    display: flex; /* Use flexbox for alignment */
+    align-items: center; /* Vertically align items */
+    font-weight: normal; /* Checkbox labels usually aren't bold by default */
+}
+
+.form-group label[for*="checkbox"] input[type="checkbox"] {
+    width: auto; /* Override full width for checkboxes */
+    margin-right: 8px; /* Space between checkbox and label text */
+}
+
 .form-group small {
     display: block;
     font-size: 0.85em;
