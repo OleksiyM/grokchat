@@ -529,12 +529,13 @@ html.dark-theme #folders-container .folder-item h5:hover {
     opacity: 0.8;
 }
 
+#chat-header #header-copy-chat-btn,
 #chat-header #header-export-chat-btn {
-    margin-right: 0px; /* Remove or set to 0 */
+    margin-right: 4px; /* Add a small margin to the right of copy and export buttons */
 }
 
 #chat-header #toggle-right-sidebar-btn {
-    margin-left: 4px; /* Adjust this value as needed for desired closeness */
+    /* No margin needed here if the others have margin-right */
 }
 
 
