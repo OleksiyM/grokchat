@@ -88,6 +88,7 @@ const GrokChatApp = {
         exportChatFormatSelect: null,
         exportCurrentChatBtn: null,
         headerExportChatBtn: null,
+        headerCopyChatBtn: null, // Added for the new button
     },
 
     state: {
@@ -223,6 +224,7 @@ const GrokChatApp = {
         this.dom.exportChatFormatSelect = document.getElementById('export-chat-format');
         this.dom.exportCurrentChatBtn = document.getElementById('export-current-chat-btn');
         this.dom.headerExportChatBtn = document.getElementById('header-export-chat-btn');
+        this.dom.headerCopyChatBtn = document.getElementById('header-copy-chat-btn'); // Cache the new button
 
         // Chat Folders UI
         this.dom.chatsSettingsTab = document.querySelector('.tab-link[data-tab="chats-settings"]');
@@ -480,6 +482,9 @@ const GrokChatApp = {
                 this.handleExportChat();
             });
         }
+        if (this.dom.headerCopyChatBtn) { // Add event listener for the new copy button
+            this.dom.headerCopyChatBtn.addEventListener('click', () => this.handleCopyCurrentChat());
+        }
 
         // Chat Folder UI Listeners (in Settings)
         if (this.dom.addFolderBtn) this.dom.addFolderBtn.addEventListener('click', () => this._handleShowAddFolderForm());
@@ -541,6 +546,78 @@ const GrokChatApp = {
 
         this._triggerDownload(content, filename, format === 'json' ? 'application/json' : 'text/markdown');
         this._showToast("Chat exported successfully!");
+    },
+
+    handleCopyCurrentChat: async function () {
+        if (!this.state.currentChatId) {
+            this._showError("No active chat selected to copy.");
+            return;
+        }
+
+        const messages = await this.getMessagesForChat(this.state.currentChatId);
+        const chat = await this.getChat(this.state.currentChatId);
+
+        if (!messages || messages.length === 0) {
+            this._showError("No messages in the current chat to copy.");
+            return;
+        }
+
+        let contentToCopy = '';
+        const format = this.state.settings.copyFormat;
+
+        if (format === 'markdown') {
+            contentToCopy = this.formatChatToMarkdown(messages, chat); // Re-use existing Markdown formatting
+        } else if (format === 'plaintext') {
+            // Similar to formatChatToMarkdown but for plain text
+            const plainTextLines = [];
+            if (chat && chat.title) plainTextLines.push(`Chat: ${chat.title}`);
+            plainTextLines.push(`Copied on: ${new Date().toLocaleString()}`);
+            let modelInfo = (chat && chat.default_model_id) ? chat.default_model_id : 'N/A';
+            if (modelInfo === 'N/A') {
+                const lastAssistantMsg = messages.filter(m => m.role === 'assistant' && m.model).pop();
+                if (lastAssistantMsg) modelInfo = lastAssistantMsg.model;
+            }
+            plainTextLines.push(`Model: ${modelInfo}`);
+            plainTextLines.push("\n---\n");
+
+            messages.forEach(msg => {
+                const sender = msg.role === 'user' ? 'User' : (msg.model || 'Assistant');
+                const time = this._formatTimestamp(msg.timestamp);
+                plainTextLines.push(`${sender} (${time}):`);
+
+                // Convert Markdown content to plain text
+                let messageContent = msg.content || '';
+                if (typeof window.marked === 'object' && typeof window.marked.parse === 'function' &&
+                    typeof window.DOMPurify === 'object' && typeof window.DOMPurify.sanitize === 'function') {
+                    const tempDiv = document.createElement('div');
+                    // Sanitize and parse Markdown, then get textContent
+                    tempDiv.innerHTML = window.DOMPurify.sanitize(window.marked.parse(messageContent));
+                    // Remove thinking blocks before getting textContent
+                    tempDiv.querySelectorAll('.thinking-block summary').forEach(s => s.remove());
+                    tempDiv.querySelectorAll('.thinking-block').forEach(tb => {
+                        // Optional: replace thinking block with a placeholder or just remove its content
+                        // For plaintext, usually just removing is fine.
+                        const thinkingContentDiv = tb.querySelector('div');
+                        if (thinkingContentDiv) thinkingContentDiv.remove();
+                    });
+                    messageContent = tempDiv.textContent || tempDiv.innerText || "";
+                } // else, if libs not loaded, use raw content (which might be Markdown)
+
+                plainTextLines.push(messageContent.trim()); // Trim to remove excessive newlines from parsing
+                plainTextLines.push("\n---\n");
+            });
+            contentToCopy = plainTextLines.join('\n');
+        } else {
+            this._showError("Invalid copy format selected in settings.");
+            return;
+        }
+
+        navigator.clipboard.writeText(contentToCopy)
+            .then(() => this._showToast("Chat copied to clipboard!"))
+            .catch(err => {
+                console.error("Failed to copy chat:", err);
+                this._showError("Failed to copy chat to clipboard.");
+            });
     },
 
     formatChatToMarkdown: function (messages, chat) {
