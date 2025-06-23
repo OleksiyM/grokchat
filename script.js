@@ -770,9 +770,19 @@ const GrokChatApp = {
                         top_p: chatData.top_p,
                         isPinned: chatData.isPinned || false,
                         isArchived: chatData.isArchived || false,
-                        // folderId: chatData.folderId, // TODO: Future enhancement: map folderId to existing or new folders
-                        folderId: null, // For now, import to default/history
+                        folderId: null, // Default to null
                     };
+
+                    // Check if folderId from import exists in current settings
+                    if (chatData.folderId) {
+                        const folderExists = this.state.settings.chatFolders.some(folder => folder.id === chatData.folderId);
+                        if (folderExists) {
+                            newChat.folderId = chatData.folderId;
+                        } else {
+                            console.warn(`Folder ID "${chatData.folderId}" from import not found. Chat "${chatData.title}" will be placed in default history.`);
+                            // newChat.folderId remains null
+                        }
+                    }
 
                     const newChatId = await this.addChat(newChat);
 
