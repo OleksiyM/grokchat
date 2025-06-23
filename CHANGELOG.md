@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.13]
+
+- Add 'Unlimited Context' checkbox to General Settngs
+- Add 'Copy current chat' button and functionality
+- Add chat data export and import functionality
+- Add settings import and export functionality
+- Fix: Hide chat title and model provider in header on mobile
+- Fix: Preserve folderId on chat import if folder exists
+- Fix: Add spacing between icon and text in buttons
+
 ## [0.1.12]
 
 - New 'Chats' tab in settings modal with folder management (add/rename/delete)
