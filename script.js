@@ -5,6 +5,7 @@ const GrokChatApp = {
         defaultSettings: {
             theme: 'system',
             contextWindowSize: 10,
+            unlimitedContext: false, // Added new default setting
             copyFormat: 'markdown',
             providers: [
                 { id: 'groq-default', name: 'Groq', baseUrl: 'https://api.groq.com/openai/v1', apiKey: '', models: {}, lastUpdatedModels: null },
@@ -67,6 +68,7 @@ const GrokChatApp = {
         // Settings Modal
         settingsModal: null, closeSettingsModalBtn: null, saveSettingsBtn: null,
         themeSelector: null, contextWindowSizeInput: null, contextWindowSizeValue: null,
+        unlimitedContextCheckbox: null, // Added unlimited context checkbox
         copyFormatSelector: null,
         providerList: null, addProviderBtn: null,
         clearAllHistoryBtn: null, settingsChatList: null,
@@ -180,6 +182,7 @@ const GrokChatApp = {
         this.dom.themeSelector = document.getElementById('theme-selector');
         this.dom.contextWindowSizeInput = document.getElementById('context-window-size');
         this.dom.contextWindowSizeValue = document.getElementById('context-window-size-value');
+        this.dom.unlimitedContextCheckbox = document.getElementById('unlimited-context-checkbox'); // Cached checkbox
         this.dom.copyFormatSelector = document.getElementById('copy-format-selector');
         this.dom.providerList = document.getElementById('provider-list');
         this.dom.addProviderBtn = document.getElementById('add-provider-btn');
@@ -410,6 +413,18 @@ const GrokChatApp = {
         this.dom.saveSettingsBtn.addEventListener('click', () => { this._collectSettingsFromForm(); this.saveSettings(); this._closeModal(this.dom.settingsModal); });
         this.dom.themeSelector.addEventListener('change', (e) => { this.state.settings.theme = e.target.value; this._applyTheme(); });
         this.dom.contextWindowSizeInput.addEventListener('input', (e) => { this.dom.contextWindowSizeValue.textContent = e.target.value; this.state.settings.contextWindowSize = parseInt(e.target.value); });
+        // Event listener for the unlimited context checkbox
+        if (this.dom.unlimitedContextCheckbox) {
+            this.dom.unlimitedContextCheckbox.addEventListener('change', (e) => {
+                this.state.settings.unlimitedContext = e.target.checked;
+                this.dom.contextWindowSizeInput.disabled = e.target.checked;
+                this.dom.contextWindowSizeValue.style.opacity = e.target.checked ? 0.5 : 1;
+                // If unchecking "Unlimited", ensure the slider value is reflected in settings
+                if (!e.target.checked) {
+                    this.state.settings.contextWindowSize = parseInt(this.dom.contextWindowSizeInput.value);
+                }
+            });
+        }
         this.dom.copyFormatSelector.addEventListener('change', (e) => { this.state.settings.copyFormat = e.target.value; });
         this.dom.addProviderBtn.addEventListener('click', () => this._openAddProviderModal());
         this.dom.clearAllHistoryBtn.addEventListener('click', () => this.handleClearAllHistory());
@@ -1654,13 +1669,22 @@ const GrokChatApp = {
         const context = [];
         const systemPrompt = this.state.currentChatParams.systemPrompt;
         if (systemPrompt) { context.push({ role: 'system', content: systemPrompt }); }
-        const contextWindowSize = this.state.settings.contextWindowSize;
-        if (chatId && contextWindowSize > 0) {
+
+        if (chatId) {
             const historyMessages = await this.getMessagesForChat(chatId);
-            const recentMessages = historyMessages
-                .filter(m => m.id !== currentUserMessage.id)
-                .slice(-contextWindowSize);
-            recentMessages.forEach(msg => {
+            let messagesToInclude = historyMessages.filter(m => m.id !== currentUserMessage.id);
+
+            if (!this.state.settings.unlimitedContext) {
+                const contextWindowSize = this.state.settings.contextWindowSize;
+                if (contextWindowSize > 0) {
+                    messagesToInclude = messagesToInclude.slice(-contextWindowSize);
+                } else {
+                    messagesToInclude = []; // contextWindowSize 0 means only current message + system prompt
+                }
+            }
+            // If unlimitedContext is true, messagesToInclude remains all historical messages
+
+            messagesToInclude.forEach(msg => {
                 if (msg.role === 'user' || msg.role === 'assistant') {
                     context.push({ role: msg.role, content: msg.content });
                 }
@@ -1885,8 +1909,34 @@ const GrokChatApp = {
     },
 
     _openSettingsModal: async function () { this._populateSettingsForm(); await this._populateSettingsHistoryList(); this.dom.settingsModal.style.display = 'flex'; },
-    _populateSettingsForm: function () { this.dom.themeSelector.value = this.state.settings.theme; this.dom.contextWindowSizeInput.value = this.state.settings.contextWindowSize; this.dom.contextWindowSizeValue.textContent = this.state.settings.contextWindowSize; this.dom.copyFormatSelector.value = this.state.settings.copyFormat; this._renderProviderListForSettings(); this._renderSystemPromptsList(); this._renderChatFoldersList(); this.dom.addFolderFormContainer.style.display = 'none'; },
-    _collectSettingsFromForm: function () { this.state.settings.theme = this.dom.themeSelector.value; this.state.settings.contextWindowSize = parseInt(this.dom.contextWindowSizeInput.value); this.state.settings.copyFormat = this.dom.copyFormatSelector.value; },
+    _populateSettingsForm: function () {
+        this.dom.themeSelector.value = this.state.settings.theme;
+        this.dom.contextWindowSizeInput.value = this.state.settings.contextWindowSize;
+        this.dom.contextWindowSizeValue.textContent = this.state.settings.contextWindowSize;
+        // Populate unlimited context checkbox
+        if (this.dom.unlimitedContextCheckbox) {
+            this.dom.unlimitedContextCheckbox.checked = this.state.settings.unlimitedContext;
+            this.dom.contextWindowSizeInput.disabled = this.state.settings.unlimitedContext;
+            this.dom.contextWindowSizeValue.style.opacity = this.state.settings.unlimitedContext ? 0.5 : 1;
+        }
+        this.dom.copyFormatSelector.value = this.state.settings.copyFormat;
+        this._renderProviderListForSettings();
+        this._renderSystemPromptsList();
+        this._renderChatFoldersList();
+        this.dom.addFolderFormContainer.style.display = 'none';
+    },
+    _collectSettingsFromForm: function () {
+        this.state.settings.theme = this.dom.themeSelector.value;
+        // Collect unlimited context setting
+        if (this.dom.unlimitedContextCheckbox) {
+            this.state.settings.unlimitedContext = this.dom.unlimitedContextCheckbox.checked;
+        }
+        // Only update contextWindowSize from slider if unlimited is not checked
+        if (!this.state.settings.unlimitedContext) {
+            this.state.settings.contextWindowSize = parseInt(this.dom.contextWindowSizeInput.value);
+        }
+        this.state.settings.copyFormat = this.dom.copyFormatSelector.value;
+    },
     async _populateSettingsHistoryList() { if (!this.state.db) { this.dom.settingsChatList.innerHTML = '<li>DB not available.</li>'; return; } const chats = await this.getAllChats(); this.dom.settingsChatList.innerHTML = ''; if (chats.length === 0) { this.dom.settingsChatList.innerHTML = '<li>No chats.</li>'; } else { chats.sort((a, b) => b.updated_at - a.updated_at).forEach(chat => { const li = document.createElement('li'); li.innerHTML = `<span>${chat.title || `Chat ${chat.id}`} (Updated: ${this._formatTimestamp(chat.updated_at)})</span>`; const deleteBtn = document.createElement('button'); deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete'; deleteBtn.classList.add('btn', 'btn-danger', 'btn-sm'); deleteBtn.style.marginLeft = '10px'; deleteBtn.onclick = () => this.handleDeleteChat(chat.id, true); li.appendChild(deleteBtn); this.dom.settingsChatList.appendChild(li); }); } },
     _renderProviderListForSettings: function () { this.dom.providerList.innerHTML = ''; if (this.state.settings.providers.length === 0) { this.dom.providerList.innerHTML = '<p>No providers. Add one!</p>'; return; } this.state.settings.providers.forEach(provider => { const itemDiv = document.createElement('div'); itemDiv.classList.add('provider-item'); itemDiv.innerHTML = `<div class="provider-item-header"><h4>${provider.name}</h4><div class="provider-actions"><button class="btn btn-sm" data-provider-id="${provider.id}" data-action="manage-models"><i class="fas fa-list-ul"></i> Manage Models</button><button class="btn btn-sm" data-provider-id="${provider.id}" data-action="edit-provider"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-sm btn-danger" data-provider-id="${provider.id}" data-action="delete-provider"><i class="fas fa-trash-alt"></i> Delete</button></div></div><p><small>Base URL: ${provider.baseUrl}</small></p><p><small>API Key: <span class="api-key-display">${provider.apiKey ? '********' + provider.apiKey.slice(-4) : 'Not Set'}</span></small></p>`; this.dom.providerList.appendChild(itemDiv); }); this.dom.providerList.querySelectorAll('.provider-actions button').forEach(button => { button.addEventListener('click', (e) => { const providerId = e.currentTarget.dataset.providerId; const action = e.currentTarget.dataset.action; if (action === 'edit-provider') this._openAddProviderModal(providerId); else if (action === 'delete-provider') this.handleDeleteProvider(providerId); else if (action === 'manage-models') this._openManageModelsModal(providerId); }); }); },
     
