@@ -229,6 +229,11 @@ const GrokChatApp = {
         // Chat Folders UI
         this.dom.chatsSettingsTab = document.querySelector('.tab-link[data-tab="chats-settings"]');
         this.dom.chatFoldersList = document.getElementById('chat-folders-list');
+        // Chat Data Management UI
+        this.dom.exportAllChatsBtn = document.getElementById('export-all-chats-btn');
+        this.dom.importChatsBtn = document.getElementById('import-chats-btn');
+        this.dom.importChatsFileInput = document.getElementById('import-chats-file-input');
+
         this.dom.addFolderBtn = document.getElementById('add-folder-btn');
         this.dom.renameFolderBtn = document.getElementById('rename-folder-btn');
         this.dom.deleteFolderBtn = document.getElementById('delete-folder-btn');
@@ -507,6 +512,180 @@ const GrokChatApp = {
             });
         }
 
+        // Chat Data Management listeners
+        if (this.dom.exportAllChatsBtn) {
+            this.dom.exportAllChatsBtn.addEventListener('click', () => this.handleExportAllChats());
+        }
+        if (this.dom.importChatsBtn) {
+            this.dom.importChatsBtn.addEventListener('click', () => this.handleImportChatsClick());
+        }
+        if (this.dom.importChatsFileInput) {
+            this.dom.importChatsFileInput.addEventListener('change', (e) => this.handleImportFileSelected(e));
+        }
+
+    },
+
+    handleExportAllChats: async function () {
+        if (!this.state.db) {
+            this._showError("Database not available. Cannot export chats.");
+            return;
+        }
+
+        const allChats = await this.getAllChats();
+        if (allChats.length === 0) {
+            this._showError("No chats to export.");
+            return;
+        }
+
+        const exportData = [];
+        for (const chat of allChats) {
+            const messages = await this.getMessagesForChat(chat.id);
+            // Create a chat object for export, excluding the original id to avoid import conflicts
+            // and including all other relevant chat properties.
+            const chatExportObject = {
+                title: chat.title,
+                created_at: chat.created_at,
+                updated_at: chat.updated_at,
+                default_provider_id: chat.default_provider_id,
+                default_model_id: chat.default_model_id,
+                system_prompt: chat.system_prompt,
+                temperature: chat.temperature,
+                max_tokens: chat.max_tokens,
+                top_p: chat.top_p,
+                isPinned: chat.isPinned || false,
+                isArchived: chat.isArchived || false,
+                folderId: chat.folderId, // This might need mapping if folder IDs change on import
+                messages: messages.map(msg => ({
+                    // Exclude message id, it will be regenerated on import
+                    role: msg.role,
+                    content: msg.content,
+                    timestamp: msg.timestamp,
+                    model: msg.model,
+                    provider: msg.provider,
+                    technical_info: msg.technical_info,
+                    edited: msg.edited
+                }))
+            };
+            exportData.push(chatExportObject);
+        }
+
+        const jsonContent = JSON.stringify(exportData, null, 2);
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+        const filename = `GrokChat_All_Chats_${timestamp}.json`;
+
+        this._triggerDownload(jsonContent, filename, 'application/json');
+        this._showToast("All chats exported successfully!");
+    },
+
+    handleImportChatsClick: function () {
+        if (this.dom.importChatsFileInput) {
+            this.dom.importChatsFileInput.click();
+        }
+    },
+
+    handleImportFileSelected: async function (event) {
+        if (!this.state.db) {
+            this._showError("Database not available. Cannot import chats.");
+            return;
+        }
+
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        // Reset file input to allow importing the same file again if needed
+        event.target.value = null;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+
+                if (!Array.isArray(importedData)) {
+                    this._showError("Invalid import file: Root should be an array of chats.");
+                    return;
+                }
+
+                let importedCount = 0;
+                for (const chatData of importedData) {
+                    // Basic validation for essential chat properties
+                    if (typeof chatData.title !== 'string' ||
+                        typeof chatData.created_at !== 'number' ||
+                        typeof chatData.updated_at !== 'number' ||
+                        !Array.isArray(chatData.messages)) {
+                        console.warn("Skipping invalid chat object during import:", chatData);
+                        continue; // Skip this chat if essential fields are missing/invalid
+                    }
+
+                    const newChat = {
+                        title: chatData.title,
+                        created_at: chatData.created_at,
+                        updated_at: chatData.updated_at,
+                        default_provider_id: chatData.default_provider_id,
+                        default_model_id: chatData.default_model_id,
+                        system_prompt: chatData.system_prompt,
+                        temperature: chatData.temperature,
+                        max_tokens: chatData.max_tokens,
+                        top_p: chatData.top_p,
+                        isPinned: chatData.isPinned || false,
+                        isArchived: chatData.isArchived || false,
+                        // folderId: chatData.folderId, // TODO: Future enhancement: map folderId to existing or new folders
+                        folderId: null, // For now, import to default/history
+                    };
+
+                    const newChatId = await this.addChat(newChat);
+
+                    for (const msgData of chatData.messages) {
+                        // Basic validation for message properties
+                        if (typeof msgData.role !== 'string' ||
+                            typeof msgData.content !== 'string' ||
+                            typeof msgData.timestamp !== 'number') {
+                            console.warn("Skipping invalid message object during import:", msgData, "for chat:", newChat.title);
+                            continue; // Skip invalid messages
+                        }
+
+                        const newMessage = {
+                            chat_id: newChatId,
+                            role: msgData.role,
+                            content: msgData.content,
+                            timestamp: msgData.timestamp,
+                            model: msgData.model,
+                            provider: msgData.provider,
+                            technical_info: msgData.technical_info,
+                            edited: msgData.edited || false
+                        };
+                        await this.addMessage(newMessage);
+                    }
+                    importedCount++;
+                }
+
+                if (importedCount > 0) {
+                    this._showToast(`${importedCount} chat(s) imported successfully!`);
+                    await this.renderChatList();
+                    await this._populateSettingsHistoryList(); // Refresh history list in settings
+                    if (this.state.currentChatId === null && importedCount > 0) { // If no chat was open, load the first imported one or last one
+                        await this.loadInitialChat(); // This will load the most recent chat
+                    }
+                } else if (importedData.length > 0) {
+                     this._showError("No valid chats found in the file to import.");
+                } else {
+                     this._showError("Import file was empty or contained no chat data.");
+                }
+
+            } catch (error) {
+                console.error("Error importing chats:", error);
+                this._showError(`Failed to import chats: ${error.message}`);
+            }
+        };
+
+        reader.onerror = (error) => {
+            console.error("Error reading import file:", error);
+            this._showError("Failed to read the import file.");
+        };
+
+        reader.readAsText(file);
     },
 
     handleExportChat: async function () {
