@@ -4,7 +4,7 @@
 
 [![GrokChat Logo](https://img.shields.io/badge/GrokChat-Web%20Client-blue)](https://grokchat.pages.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.13-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.1.14-orange)](CHANGELOG.md)
 
 </div>
 

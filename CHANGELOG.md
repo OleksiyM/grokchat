@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.14]
+
+- Feat: Replace prompt with modal for renaming chat titles
+
 ## [0.1.13]
 
 - Add 'Unlimited Context' checkbox to General Settngs

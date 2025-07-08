@@ -1,4 +1,4 @@
-const CACHE_NAME = 'grokchat-cache-v0.1.13';
+const CACHE_NAME = 'grokchat-cache-v0.1.14';
 const urlsToCache = [
   '/',
   '/index.html',
