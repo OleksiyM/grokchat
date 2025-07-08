@@ -246,6 +246,14 @@ const GrokChatApp = {
         this.dom.newFolderNameInput = document.getElementById('new-folder-name-input');
         this.dom.saveNewFolderBtn = document.getElementById('save-new-folder-btn');
         this.dom.cancelAddFolderBtn = document.getElementById('cancel-add-folder-btn');
+
+        // Rename Chat Modal UI
+        this.dom.renameChatModal = document.getElementById('rename-chat-modal');
+        this.dom.closeRenameChatModalBtn = document.getElementById('close-rename-chat-modal-btn');
+        this.dom.editingChatIdInput = document.getElementById('editing-chat-id-input'); // Although hidden, might be useful
+        this.dom.newChatNameInput = document.getElementById('new-chat-name-input');
+        this.dom.saveRenameChatBtn = document.getElementById('save-rename-chat-btn');
+        this.dom.cancelRenameChatBtn = document.getElementById('cancel-rename-chat-btn');
     },
 
     _registerServiceWorker: function () {
@@ -539,7 +547,74 @@ const GrokChatApp = {
             this.dom.importSettingsFileInput.addEventListener('change', (e) => this._handleImportSettingsFileSelected(e));
         }
 
+        // Rename Chat Modal Listeners
+        if (this.dom.saveRenameChatBtn) {
+            this.dom.saveRenameChatBtn.addEventListener('click', () => this._handleSaveChatRename());
+        }
+        if (this.dom.cancelRenameChatBtn) {
+            this.dom.cancelRenameChatBtn.addEventListener('click', () => this._handleCancelChatRename());
+        }
+        if (this.dom.closeRenameChatModalBtn) {
+            this.dom.closeRenameChatModalBtn.addEventListener('click', () => this._handleCancelChatRename());
+        }
+        // Optional: Allow Enter key to save from input field
+        if (this.dom.newChatNameInput) {
+            this.dom.newChatNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent form submission if it were in a form
+                    this._handleSaveChatRename();
+                }
+            });
+        }
+        // Close rename modal if backdrop is clicked
+        if (this.dom.renameChatModal) {
+            this.dom.renameChatModal.addEventListener('click', (event) => {
+                if (event.target === this.dom.renameChatModal) { // Clicked on backdrop
+                    this._handleCancelChatRename();
+                }
+            });
+        }
+
     },
+
+    _handleSaveChatRename: async function() {
+        const newTitle = this.dom.newChatNameInput.value.trim();
+        const chatId = this.state.editingChatId;
+
+        if (!chatId) {
+            this._showError("No chat selected for renaming.");
+            this._handleCancelChatRename(); // Close modal and clear state
+            return;
+        }
+
+        if (!newTitle) {
+            this._showError("Chat name cannot be empty.");
+            this.dom.newChatNameInput.focus(); // Keep modal open and focus input
+            return;
+        }
+
+        const chat = await this.getChat(chatId);
+        if (chat) {
+            chat.title = newTitle;
+            chat.updated_at = Date.now();
+            await this.updateChat(chat);
+            await this.renderChatList();
+            if (this.state.currentChatId === chatId) {
+                this._updateChatHeader(chatId);
+            }
+            this._showToast("Chat renamed successfully.");
+        } else {
+            this._showError("Failed to find chat to rename.");
+        }
+        this._handleCancelChatRename(); // Close modal and clear state
+    },
+
+    _handleCancelChatRename: function() {
+        this.dom.renameChatModal.style.display = 'none';
+        this.state.editingChatId = null;
+        this.dom.newChatNameInput.value = ''; // Clear input
+    },
+
 
     _handleExportSettings: function() {
         try {
@@ -2286,8 +2361,19 @@ const GrokChatApp = {
     },
 
     handleRenameChat: async function (chatId) {
-        const chat = await this.getChat(chatId); if (!chat) return; const newTitle = prompt("Enter new chat title:", chat.title || `Chat ${chat.id}`);
-        if (newTitle && newTitle.trim() !== "") { chat.title = newTitle.trim(); chat.updated_at = Date.now(); await this.updateChat(chat); await this.renderChatList(); if (this.state.currentChatId === chatId) { this._updateChatHeader(chatId); } this._showToast("Chat renamed."); }
+        const chat = await this.getChat(chatId);
+        if (!chat) {
+            this._showError("Chat not found.");
+            return;
+        }
+
+        this.state.editingChatId = chatId; // Store the chatId
+        this.dom.newChatNameInput.value = chat.title || `Chat ${chat.id}`;
+        // this.dom.editingChatIdInput.value = chatId; // Useful if we need to pass it via hidden input
+
+        this.dom.renameChatModal.style.display = 'flex';
+        this.dom.newChatNameInput.focus();
+        this.dom.newChatNameInput.select(); // Select current text for easy replacement
     },
 
     handleDeleteChat: async function (chatId, fromSettings = false) {
@@ -2713,7 +2799,17 @@ const GrokChatApp = {
     addMessage: function (messageData) { return new Promise(async (resolve, reject) => { const store = this._getStore('messages', 'readwrite'); const request = store.add(messageData); request.onsuccess = async (e) => { const chat = await this.getChat(messageData.chat_id); if (chat) { chat.updated_at = Date.now(); try { await this.updateChat(chat); } catch (updateError) { console.error("Error updating chat timestamp:", updateError); } } resolve(e.target.result); }; request.onerror = e => reject(e.target.error); }); },
     getMessagesForChat: function (chatId) { return new Promise((resolve, reject) => { const store = this._getStore('messages'); const index = store.index('chat_id'); const request = index.getAll(chatId); request.onsuccess = e => resolve(e.target.result.sort((a, b) => a.timestamp - b.timestamp)); request.onerror = e => reject(e.target.error); }); },
     clearAllChatsAndMessages: function () { return new Promise((resolve, reject) => { if (!this.state.db) { reject("DB not init."); return; } const tx = this.state.db.transaction(['chats', 'messages'], 'readwrite'); const chatStore = tx.objectStore('chats'); const messageStore = tx.objectStore('messages'); const clearChatsReq = chatStore.clear(); const clearMessagesReq = messageStore.clear(); clearChatsReq.onerror = e => reject(e.target.error); clearMessagesReq.onerror = e => reject(e.target.error); tx.oncomplete = () => resolve(); tx.onerror = e => reject(e.target.error); }); },
-    _closeModal: function (modalElement) { if (modalElement) modalElement.style.display = 'none'; },
+    _closeModal: function (modalElement) {
+        if (modalElement) {
+            modalElement.style.display = 'none';
+            // If we are closing the rename chat modal, also clear its specific state.
+            if (modalElement === this.dom.renameChatModal) {
+                this.state.editingChatId = null;
+                this.dom.newChatNameInput.value = '';
+            }
+            // Add similar checks if other modals have specific state to clear on generic close
+        }
+    },
     _formatTimestamp: function (timestamp) { if (!timestamp) return ''; return new Date(timestamp).toLocaleString(); },
     _generateUUID: function () { return 'xxxx-xxxx-xxxx-xxxx'.replace(/[x]/g, function (c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); },
     _showError: function (message) { console.error("GrokChat Error:", message); const errorToast = document.createElement('div'); errorToast.className = 'toast-notification error-toast'; errorToast.textContent = `Error: ${message}`; document.body.appendChild(errorToast); errorToast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background-color:#dc3545; color:white; padding:10px 20px; border-radius:5px; z-index:2000; box-shadow:0 2px 10px rgba(0,0,0,0.2);'; setTimeout(() => { errorToast.remove(); }, 5000); },

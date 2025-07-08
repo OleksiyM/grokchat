@@ -1424,6 +1424,18 @@ html.dark-theme .message-actions button:hover {
     /* box-sizing: border-box; */
 }
 
+/* Rename Chat Modal Specific Styles */
+/* Most styling is inherited from .modal, .modal-content, etc. */
+/* We can add specific overrides if needed. For now, it should largely match. */
+#rename-chat-modal .modal-content {
+    max-width: 500px; /* Or any specific size, smaller than settings modal */
+}
+
+#new-chat-name-input {
+    width: 100%; /* Ensure input takes full width of its container */
+}
+
+
 /* Chat Folders Styles */
 #chats-settings .item-list { /* General item list styling for folders */
     list-style-type: none;

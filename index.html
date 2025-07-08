@@ -300,7 +300,7 @@
                     <h3>About GrokChat</h3>
                     <p>GrokChat is an open-source project. You can find the source code and contribute on <a
                             href="http://github.com/OleksiyM/grokchat" target="_blank">GitHub</a>.</p>
-                    <p>Version: 0.1.13</p>
+                    <p>Version: 0.1.14</p>
                 </div>
 
             </div>
@@ -383,6 +383,27 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="script.js"></script>
+
+    <!-- Rename Chat Modal -->
+    <div id="rename-chat-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="rename-chat-modal-title">Rename Chat</h2>
+                <button id="close-rename-chat-modal-btn" class="btn icon-btn close-modal-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editing-chat-id-input">
+                <div class="form-group">
+                    <label for="new-chat-name-input">New Chat Name:</label>
+                    <input type="text" id="new-chat-name-input" placeholder="Enter new chat name...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-rename-chat-btn" class="btn btn-primary">Save</button>
+                <button id="cancel-rename-chat-btn" class="btn">Cancel</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
