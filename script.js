@@ -34,7 +34,8 @@ const GrokChatApp = {
             systemPrompt: '',
             temperature: 0.7,
             max_tokens: null,
-            top_p: 1.0
+            top_p: 1.0,
+            stream: true
 
         }
     },
@@ -64,6 +65,7 @@ const GrokChatApp = {
         systemPromptInput: null, temperatureInput: null, temperatureValue: null,
         maxTokensInput: null, maxTokensValue: null,
         topPInput: null, topPValue: null,
+        streamOutputCheckbox: null,
 
         // Settings Modal
         settingsModal: null, closeSettingsModalBtn: null, saveSettingsBtn: null,
@@ -71,7 +73,7 @@ const GrokChatApp = {
         unlimitedContextCheckbox: null, // Added unlimited context checkbox
         copyFormatSelector: null,
         providerList: null, addProviderBtn: null,
-        clearAllHistoryBtn: null, settingsChatList: null,
+        clearAllHistoryBtn: null,
 
         // Add/Edit Provider Modal
         addProviderModal: null, providerModalTitle: null, closeProviderModalBtns: null,
@@ -83,6 +85,7 @@ const GrokChatApp = {
         manageModelsProviderIdInput: null, updateModelsListBtn: null, modelsLastUpdatedStatus: null,
         currentProviderModelsList: null, allProviderModelsList: null, saveManagedModelsBtn: null,
         modelsComparisonInfo: null,
+        manualModelIdInput: null, manualAddModelBtn: null,
 
         tabLinks: null,
         exportChatFormatSelect: null,
@@ -117,6 +120,13 @@ const GrokChatApp = {
         this._loadSettings();
         this._applyTheme();
         this._registerServiceWorker();
+
+        if (window.marked) {
+            window.marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+        }
 
         try {
             this.state.db = await this._initDB();
@@ -177,6 +187,7 @@ const GrokChatApp = {
         this.dom.maxTokensValue = document.getElementById('max-tokens-value');
         this.dom.topPInput = document.getElementById('top-p');
         this.dom.topPValue = document.getElementById('top-p-value');
+        this.dom.streamOutputCheckbox = document.getElementById('stream-output-checkbox');
         this.dom.settingsModal = document.getElementById('settings-modal');
         this.dom.closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
         this.dom.saveSettingsBtn = document.getElementById('save-settings-btn');
@@ -188,7 +199,6 @@ const GrokChatApp = {
         this.dom.providerList = document.getElementById('provider-list');
         this.dom.addProviderBtn = document.getElementById('add-provider-btn');
         this.dom.clearAllHistoryBtn = document.getElementById('clear-all-history-btn');
-        this.dom.settingsChatList = document.getElementById('settings-chat-list');
         this.dom.addProviderModal = document.getElementById('add-provider-modal');
         this.dom.providerModalTitle = document.getElementById('provider-modal-title');
         this.dom.closeProviderModalBtns = document.querySelectorAll('[data-modal-id="add-provider-modal"].close-modal-btn');
@@ -208,6 +218,8 @@ const GrokChatApp = {
         this.dom.allProviderModelsList = document.getElementById('all-provider-models-list');
         this.dom.saveManagedModelsBtn = document.getElementById('save-managed-models-btn');
         this.dom.modelsComparisonInfo = document.getElementById('models-comparison-info');
+        this.dom.manualModelIdInput = document.getElementById('manual-model-id-input');
+        this.dom.manualAddModelBtn = document.getElementById('manual-add-model-btn');
         this.dom.tabLinks = document.querySelectorAll('.tabs .tab-link');
         this.state.hljsThemeLinkTag = document.getElementById('hljs-theme');
 
@@ -454,6 +466,7 @@ const GrokChatApp = {
         this.dom.closeManageModelsBtns.forEach(btn => btn.addEventListener('click', () => this._closeModal(this.dom.manageModelsModal)));
         this.dom.updateModelsListBtn.addEventListener('click', () => this.handleUpdateModelsListFromProvider());
         this.dom.saveManagedModelsBtn.addEventListener('click', () => this.handleSaveManagedModels());
+        this.dom.manualAddModelBtn.addEventListener('click', () => this.handleManualAddModel());
         this.dom.tabLinks.forEach(link => { link.addEventListener('click', (e) => { const tabId = e.target.dataset.tab; const tabContainer = e.target.closest('.modal-content, .sidebar'); if (!tabContainer) return; tabContainer.querySelectorAll('.tab-link').forEach(tl => tl.classList.remove('active')); e.target.classList.add('active'); tabContainer.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active')); const activeTabContent = tabContainer.querySelector(`#${tabId}`); if (activeTabContent) activeTabContent.classList.add('active'); }); });
         this.dom.systemPromptInput.addEventListener('change', (e) => { this.state.currentChatParams.systemPrompt = e.target.value; this._saveCurrentChatParams(); });
         this.dom.temperatureInput.addEventListener('input', (e) => { this.dom.temperatureValue.textContent = e.target.value; this.state.currentChatParams.temperature = parseFloat(e.target.value); });
@@ -462,6 +475,7 @@ const GrokChatApp = {
         this.dom.maxTokensInput.addEventListener('input', (e) => { this.dom.maxTokensValue.textContent = e.target.value; });
         this.dom.topPInput.addEventListener('input', (e) => { this.dom.topPValue.textContent = e.target.value; this.state.currentChatParams.top_p = parseFloat(e.target.value); });
         this.dom.topPInput.addEventListener('change', () => this._saveCurrentChatParams());
+        this.dom.streamOutputCheckbox.addEventListener('change', (e) => { this.state.currentChatParams.stream = e.target.checked; this._saveCurrentChatParams(); });
         this.dom.providerSelectorChat.addEventListener('change', (e) => this._handleChatProviderSelection(e.target.value));
         this.dom.modelSelectorChat.addEventListener('change', (e) => this._handleChatModelSelection(e.target.value));
         this.dom.reasoningEffortCheckbox = document.getElementById('reasoning-effort-checkbox');
@@ -888,7 +902,7 @@ const GrokChatApp = {
                 if (importedCount > 0) {
                     this._showToast(`${importedCount} chat(s) imported successfully!`);
                     await this.renderChatList();
-                    await this._populateSettingsHistoryList(); // Refresh history list in settings
+                    
                     if (this.state.currentChatId === null && importedCount > 0) { // If no chat was open, load the first imported one or last one
                         await this.loadInitialChat(); // This will load the most recent chat
                     }
@@ -1723,39 +1737,39 @@ const GrokChatApp = {
 
             if (message.role === 'user') {
                 const editBtn = document.createElement('button');
-                editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+                editBtn.innerHTML = '<i class="fas fa-edit"></i><span class="btn-text"> Edit</span>';
                 editBtn.onclick = () => this.handleEditMessage(message.id);
                 messageActions.appendChild(editBtn);
                 
                 const deleteBtn = document.createElement('button');
-                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i><span class="btn-text"> Delete</span>';
                 deleteBtn.onclick = () => this.handleDeleteMessage(message.id);
                 messageActions.appendChild(deleteBtn);
             } else if (message.role === 'assistant') {
                 const copyBtn = document.createElement('button');
-                copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i><span class="btn-text"> Copy</span>';
                 copyBtn.onclick = () => this._copyMessageContent(message);
                 messageActions.appendChild(copyBtn);
 
                 const editBtn = document.createElement('button');
-                editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+                editBtn.innerHTML = '<i class="fas fa-edit"></i><span class="btn-text"> Edit</span>';
                 editBtn.onclick = () => this.handleEditMessage(message.id);
                 messageActions.appendChild(editBtn);
 
                 const deleteBtn = document.createElement('button');
-                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i><span class="btn-text"> Delete</span>';
                 deleteBtn.onclick = () => this.handleDeleteMessage(message.id);
                 messageActions.appendChild(deleteBtn);
 
                 const regenBtn = document.createElement('button');
-                regenBtn.innerHTML = '<i class="fas fa-redo"></i> Regenerate';
+                regenBtn.innerHTML = '<i class="fas fa-redo"></i><span class="btn-text"> Regenerate</span>';
                 regenBtn.onclick = () => this.handleRegenerateMessage(message.chat_id, message.id);
                 messageActions.appendChild(regenBtn);
 
                 if (message.technical_info) {
                     const infoBtn = document.createElement('button');
                     infoBtn.classList.add('info-button-container');
-                    infoBtn.innerHTML = '<i class="fas fa-info-circle"></i> Info';
+                    infoBtn.innerHTML = '<i class="fas fa-info-circle"></i><span class="btn-text"> Info</span>';
                     
                     const techInfoPopup = document.createElement('div');
                     techInfoPopup.classList.add('tech-info-popup');
@@ -1851,6 +1865,7 @@ const GrokChatApp = {
         this.dom.temperatureInput.value = this.state.currentChatParams.temperature !== undefined ? this.state.currentChatParams.temperature : this.config.defaultChatParams.temperature; this.dom.temperatureValue.textContent = this.dom.temperatureInput.value;
         this.dom.maxTokensInput.value = this.state.currentChatParams.max_tokens || this.config.defaultChatParams.max_tokens; this.dom.maxTokensValue.textContent = this.dom.maxTokensInput.value;
         this.dom.topPInput.value = this.state.currentChatParams.top_p !== undefined ? this.state.currentChatParams.top_p : this.config.defaultChatParams.top_p; this.dom.topPValue.textContent = this.dom.topPInput.value;
+        this.dom.streamOutputCheckbox.checked = this.state.currentChatParams.stream !== undefined ? this.state.currentChatParams.stream : this.config.defaultChatParams.stream;
         this._populateSystemPromptDropdown();
     },
 
@@ -1864,7 +1879,7 @@ const GrokChatApp = {
         if (!this.state.db) return;
         this.state.currentChatId = chatId; this.state.settings.lastOpenedChatId = chatId; this.saveSettings();
         const chat = await this.getChat(chatId);
-        if (chat) { this.state.currentChatParams = { systemPrompt: chat.system_prompt !== undefined ? chat.system_prompt : this.config.defaultChatParams.systemPrompt, temperature: chat.temperature !== undefined ? chat.temperature : this.config.defaultChatParams.temperature, max_tokens: chat.max_tokens || this.config.defaultChatParams.max_tokens, top_p: chat.top_p !== undefined ? chat.top_p : this.config.defaultChatParams.top_p, provider_id: chat.default_provider_id || this.state.settings.selectedProviderId, model_id: chat.default_model_id || this.state.settings.selectedModelId, }; }
+        if (chat) { this.state.currentChatParams = { systemPrompt: chat.system_prompt !== undefined ? chat.system_prompt : this.config.defaultChatParams.systemPrompt, temperature: chat.temperature !== undefined ? chat.temperature : this.config.defaultChatParams.temperature, max_tokens: chat.max_tokens || this.config.defaultChatParams.max_tokens, top_p: chat.top_p !== undefined ? chat.top_p : this.config.defaultChatParams.top_p, stream: chat.stream !== undefined ? chat.stream : this.config.defaultChatParams.stream, provider_id: chat.default_provider_id || this.state.settings.selectedProviderId, model_id: chat.default_model_id || this.state.settings.selectedModelId, }; }
         else { this.state.currentChatParams = { ...this.config.defaultChatParams, provider_id: this.state.settings.selectedProviderId, model_id: this.state.settings.selectedModelId }; }
         await this.renderMessages(chatId); await this.renderChatList(); this._updateChatHeader(chatId); this._updateChatModelSelectors(); this._updateRightSidebarParams(); this.dom.messageInput.focus();
     },
@@ -1884,6 +1899,7 @@ const GrokChatApp = {
             temperature: this.config.defaultChatParams.temperature,
             max_tokens: this.config.defaultChatParams.max_tokens,
             top_p: this.config.defaultChatParams.top_p,
+            stream: this.config.defaultChatParams.stream,
             isPinned: false,      // Initialize new property
             isArchived: false,    // Initialize new property
             folderId: null        // Initialize new property (or 'default' if preferred)
@@ -1899,7 +1915,7 @@ const GrokChatApp = {
     _saveCurrentChatParams: async function () {
         if (!this.state.currentChatId || !this.state.db) return;
         const chat = await this.getChat(this.state.currentChatId);
-        if (chat) { chat.system_prompt = this.state.currentChatParams.systemPrompt; chat.temperature = this.state.currentChatParams.temperature; chat.max_tokens = this.state.currentChatParams.max_tokens; chat.top_p = this.state.currentChatParams.top_p; chat.default_provider_id = this.dom.providerSelectorChat.value; chat.default_model_id = this.dom.modelSelectorChat.value; await this.updateChat(chat); this._updateChatHeader(this.state.currentChatId); }
+        if (chat) { chat.system_prompt = this.state.currentChatParams.systemPrompt; chat.temperature = this.state.currentChatParams.temperature; chat.max_tokens = this.state.currentChatParams.max_tokens; chat.top_p = this.state.currentChatParams.top_p; chat.stream = this.state.currentChatParams.stream; chat.default_provider_id = this.dom.providerSelectorChat.value; chat.default_model_id = this.dom.modelSelectorChat.value; await this.updateChat(chat); this._updateChatHeader(this.state.currentChatId); }
     },
 
     handleSendMessage: async function () {
@@ -1987,7 +2003,7 @@ const GrokChatApp = {
                 temperature: this.state.currentChatParams.temperature,
                 max_tokens: this.state.currentChatParams.max_tokens,
                 top_p: this.state.currentChatParams.top_p,
-                stream: true,
+                stream: this.state.currentChatParams.stream,
                 ...(this.dom.reasoningEffortCheckbox?.checked && this.dom.reasoningEffortSelect?.value !== 'none' && { reasoning_effort: this.dom.reasoningEffortSelect?.value })
             };
             Object.keys(requestBody).forEach(key => {
@@ -2076,6 +2092,21 @@ const GrokChatApp = {
                 }
             }
             const durationMs = Date.now() - startTime;
+
+            if (!this.state.currentStreamingResponseMessage && buffer.trim()) {
+                try {
+                    const data = JSON.parse(buffer.trim());
+                    if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+                        this.state.currentStreamingResponseMessage = data.choices[0].message.content;
+                    }
+                    if (data.usage) {
+                        finalUsage = data.usage;
+                    }
+                } catch (e) {
+                    console.error('Could not parse response as a single JSON object:', e, 'Buffer:', buffer);
+                    throw new Error("Failed to parse response from model.");
+                }
+            }
 
             if (assistantMessageElement) {
                 assistantMessageElement.innerHTML = window.DOMPurify.sanitize(window.marked.parse(this.state.currentStreamingResponseMessage));
@@ -2379,12 +2410,12 @@ const GrokChatApp = {
     handleDeleteChat: async function (chatId, fromSettings = false) {
         if (!confirm("Are you sure you want to delete this chat and all its messages? This cannot be undone.")) { return; } await this.deleteChat(chatId);
         if (this.state.currentChatId === chatId) { this.state.currentChatId = null; this.state.currentChatParams = { ...this.config.defaultChatParams }; await this.loadInitialChat(); }
-        await this.renderChatList(); if (fromSettings) await this._populateSettingsHistoryList(); this._showToast("Chat deleted.");
+        await this.renderChatList();  this._showToast("Chat deleted.");
     },
 
     handleClearAllHistory: async function () {
         if (!confirm("ARE YOU SURE you want to delete ALL chat history? This is irreversible!")) return; if (!confirm("FINAL WARNING: This will delete everything. Proceed?")) return;
-        await this.clearAllChatsAndMessages(); this.state.currentChatId = null; this.state.currentChatParams = { ...this.config.defaultChatParams }; await this.loadInitialChat(); await this.renderChatList(); await this._populateSettingsHistoryList(); this._showToast("All chat history cleared.");
+        await this.clearAllChatsAndMessages(); this.state.currentChatId = null; this.state.currentChatParams = { ...this.config.defaultChatParams }; await this.loadInitialChat(); await this.renderChatList(); this._showToast("All chat history cleared.");
     },
 
     _handleChatProviderSelection: async function (providerId) {
@@ -2399,7 +2430,7 @@ const GrokChatApp = {
         else { this.state.settings.selectedModelId = modelId; this.saveSettings(); }
     },
 
-    _openSettingsModal: async function () { this._populateSettingsForm(); await this._populateSettingsHistoryList(); this.dom.settingsModal.style.display = 'flex'; },
+    _openSettingsModal: async function () { this._populateSettingsForm(); this.dom.settingsModal.style.display = 'flex'; },
     _populateSettingsForm: function () {
         this.dom.themeSelector.value = this.state.settings.theme;
         this.dom.contextWindowSizeInput.value = this.state.settings.contextWindowSize;
@@ -2428,7 +2459,7 @@ const GrokChatApp = {
         }
         this.state.settings.copyFormat = this.dom.copyFormatSelector.value;
     },
-    async _populateSettingsHistoryList() { if (!this.state.db) { this.dom.settingsChatList.innerHTML = '<li>DB not available.</li>'; return; } const chats = await this.getAllChats(); this.dom.settingsChatList.innerHTML = ''; if (chats.length === 0) { this.dom.settingsChatList.innerHTML = '<li>No chats.</li>'; } else { chats.sort((a, b) => b.updated_at - a.updated_at).forEach(chat => { const li = document.createElement('li'); li.innerHTML = `<span>${chat.title || `Chat ${chat.id}`} (Updated: ${this._formatTimestamp(chat.updated_at)})</span>`; const deleteBtn = document.createElement('button'); deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete'; deleteBtn.classList.add('btn', 'btn-danger', 'btn-sm'); deleteBtn.style.marginLeft = '10px'; deleteBtn.onclick = () => this.handleDeleteChat(chat.id, true); li.appendChild(deleteBtn); this.dom.settingsChatList.appendChild(li); }); } },
+    
     _renderProviderListForSettings: function () { this.dom.providerList.innerHTML = ''; if (this.state.settings.providers.length === 0) { this.dom.providerList.innerHTML = '<p>No providers. Add one!</p>'; return; } this.state.settings.providers.forEach(provider => { const itemDiv = document.createElement('div'); itemDiv.classList.add('provider-item'); itemDiv.innerHTML = `<div class="provider-item-header"><h4>${provider.name}</h4><div class="provider-actions"><button class="btn btn-sm" data-provider-id="${provider.id}" data-action="manage-models"><i class="fas fa-list-ul"></i> Manage Models</button><button class="btn btn-sm" data-provider-id="${provider.id}" data-action="edit-provider"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-sm btn-danger" data-provider-id="${provider.id}" data-action="delete-provider"><i class="fas fa-trash-alt"></i> Delete</button></div></div><p><small>Base URL: ${provider.baseUrl}</small></p><p><small>API Key: <span class="api-key-display">${provider.apiKey ? '********' + provider.apiKey.slice(-4) : 'Not Set'}</span></small></p>`; this.dom.providerList.appendChild(itemDiv); }); this.dom.providerList.querySelectorAll('.provider-actions button').forEach(button => { button.addEventListener('click', (e) => { const providerId = e.currentTarget.dataset.providerId; const action = e.currentTarget.dataset.action; if (action === 'edit-provider') this._openAddProviderModal(providerId); else if (action === 'delete-provider') this.handleDeleteProvider(providerId); else if (action === 'manage-models') this._openManageModelsModal(providerId); }); }); },
     
     // Chat Folder Management Methods
@@ -2618,7 +2649,7 @@ const GrokChatApp = {
 
             const editBtn = document.createElement('button');
             editBtn.classList.add('btn', 'btn-sm', 'edit-prompt-btn');
-            editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+            editBtn.innerHTML = '<i class="fas fa-edit"></i><span class="btn-text"> Edit</span>';
             editBtn.addEventListener('click', () => this._handleEditSystemPrompt(prompt.name));
             actionsDiv.appendChild(editBtn);
 
@@ -2788,8 +2819,44 @@ const GrokChatApp = {
     handleDeleteProvider: function (providerId) { if (!confirm("Delete provider?")) return; this.state.settings.providers = this.state.settings.providers.filter(p => p.id !== providerId); if (this.state.settings.selectedProviderId === providerId) { this.state.settings.selectedProviderId = null; this.state.settings.selectedModelId = null; } this.saveSettings(); this._renderProviderListForSettings(); this._showToast("Provider deleted."); },
     _openManageModelsModal: function (providerId) { const provider = this.state.settings.providers.find(p => p.id === providerId); if (!provider) return; this.dom.manageModelsProviderIdInput.value = providerId; this.dom.manageModelsModalTitle.textContent = `Manage Models for ${provider.name}`; this.dom.modelsLastUpdatedStatus.textContent = provider.lastUpdatedModels ? `Last updated: ${this._formatTimestamp(provider.lastUpdatedModels)}` : 'Model list not fetched.'; this._renderConfiguredModelsList(provider); this.dom.allProviderModelsList.innerHTML = '<li>Click "Update Models List" to fetch.</li>'; this.dom.modelsComparisonInfo.innerHTML = ''; this.dom.manageModelsModal.querySelectorAll('.tab-link').forEach(tl => tl.classList.remove('active')); this.dom.manageModelsModal.querySelector('.tab-link[data-tab="active-models-tab"]').classList.add('active'); this.dom.manageModelsModal.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active')); this.dom.manageModelsModal.querySelector('#active-models-tab').classList.add('active'); this.dom.manageModelsModal.style.display = 'flex'; },
     _renderConfiguredModelsList: function (provider) { this.dom.currentProviderModelsList.innerHTML = ''; const models = provider.models || {}; if (Object.keys(models).length === 0) { this.dom.currentProviderModelsList.innerHTML = '<li>No models configured.</li>'; return; } const sortedModelIds = Object.keys(models).sort((a, b) => { const modelA = models[a]; const modelB = models[b]; if (modelA.favorite && !modelB.favorite) return -1; if (!modelA.favorite && modelB.favorite) return 1; if (modelA.active && !modelB.active) return -1; if (!modelA.active && modelB.active) return 1; return a.localeCompare(b); }); sortedModelIds.forEach(modelId => { const model = models[modelId]; const li = document.createElement('li'); li.innerHTML = `<span>${model.id}</span><div class="model-actions"><label><input type="checkbox" data-model-id="${model.id}" data-action="toggle-active" ${model.active ? 'checked' : ''}> Active</label><label><input type="checkbox" data-model-id="${model.id}" data-action="toggle-favorite" ${model.favorite ? 'checked' : ''}> Favorite</label><button class="btn btn-sm btn-danger" data-model-id="${model.id}" data-action="remove-model" title="Remove config"><i class="fas fa-times"></i></button></div>`; this.dom.currentProviderModelsList.appendChild(li); }); this.dom.currentProviderModelsList.querySelectorAll('input[type="checkbox"], button').forEach(el => { el.addEventListener('click', (e) => { const modelId = e.currentTarget.dataset.modelId; const action = e.currentTarget.dataset.action; const providerId = this.dom.manageModelsProviderIdInput.value; const currentProvider = this.state.settings.providers.find(p => p.id === providerId); if (!currentProvider || !currentProvider.models[modelId]) return; if (action === 'toggle-active') { currentProvider.models[modelId].active = e.currentTarget.checked; } else if (action === 'toggle-favorite') { currentProvider.models[modelId].favorite = e.currentTarget.checked; if (e.currentTarget.checked) currentProvider.models[modelId].active = true; } else if (action === 'remove-model') { if (confirm(`Remove ${modelId} from config?`)) { delete currentProvider.models[modelId]; } } this._renderConfiguredModelsList(currentProvider); }); }); },
-    handleUpdateModelsListFromProvider: async function () { const providerId = this.dom.manageModelsProviderIdInput.value; const provider = this.state.settings.providers.find(p => p.id === providerId); if (!provider || !provider.apiKey) { this._showError("Provider/API Key missing."); this.dom.allProviderModelsList.innerHTML = '<li>Error: Provider/API Key missing.</li>'; return; } this.dom.updateModelsListBtn.disabled = true; this.dom.updateModelsListBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...'; this.dom.allProviderModelsList.innerHTML = '<li>Fetching models...</li>'; this.dom.modelsComparisonInfo.innerHTML = ''; try { const response = await fetch(`${provider.baseUrl}/models`, { headers: { 'Authorization': `Bearer ${provider.apiKey}` } }); if (!response.ok) { const errorData = await response.json().catch(() => null); const errorMsg = errorData?.error?.message || response.statusText; throw new Error(`API Error (${response.status}): ${errorMsg}`); } const fetchedData = await response.json(); const fetchedModels = fetchedData.data || []; if (!Array.isArray(fetchedModels)) throw new Error("Invalid model list format."); provider.lastUpdatedModels = Date.now(); this.dom.modelsLastUpdatedStatus.textContent = `Last updated: ${this._formatTimestamp(provider.lastUpdatedModels)}`; const currentModelIds = Object.keys(provider.models || {}); const fetchedModelIds = fetchedModels.map(m => m.id); const newModels = fetchedModelIds.filter(id => !currentModelIds.includes(id)); const removedModels = currentModelIds.filter(id => !fetchedModelIds.includes(id) && (provider.models[id]?.source === 'api')); let comparisonHTML = ''; if (newModels.length > 0) comparisonHTML += `<p>New: ${newModels.map(id => `<span class="new-model">${id}</span>`).join(', ')}</p>`; if (removedModels.length > 0) comparisonHTML += `<p>Removed by provider: ${removedModels.map(id => `<span class="removed-model">${id}</span>`).join(', ')}</p>`; this.dom.modelsComparisonInfo.innerHTML = comparisonHTML || "<p>Model list up-to-date.</p>"; this.dom.allProviderModelsList.innerHTML = ''; if (fetchedModels.length === 0) { this.dom.allProviderModelsList.innerHTML = '<li>No models from provider.</li>'; } else { fetchedModels.forEach(modelData => { const modelId = modelData.id; const li = document.createElement('li'); li.innerHTML = `<span>${modelId}</span><div class="model-actions"><label><input type="checkbox" data-model-id="${modelId}" data-action="add-to-active" ${provider.models[modelId]?.active ? 'checked' : ''}> Add to Configured</label></div>`; this.dom.allProviderModelsList.appendChild(li); if (!provider.models[modelId]) { provider.models[modelId] = { id: modelId, active: false, favorite: false, source: 'api' }; } else { provider.models[modelId].source = 'api'; } }); } this.dom.allProviderModelsList.querySelectorAll('input[type="checkbox"][data-action="add-to-active"]').forEach(checkbox => { checkbox.addEventListener('change', (e) => { const modelId = e.target.dataset.modelId; const currentProvider = this.state.settings.providers.find(p => p.id === providerId); if (!currentProvider.models[modelId]) { currentProvider.models[modelId] = { id: modelId, active: false, favorite: false }; } currentProvider.models[modelId].active = e.target.checked; this._renderConfiguredModelsList(currentProvider); }); }); this.saveSettings(); this._showToast("Model list updated."); } catch (error) { this.dom.allProviderModelsList.innerHTML = `<li>Error: ${error.message}</li>`; this._showError(`Failed to fetch models: ${error.message}`); } finally { this.dom.updateModelsListBtn.disabled = false; this.dom.updateModelsListBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Update Models List'; } },
+    handleUpdateModelsListFromProvider: async function () { const providerId = this.dom.manageModelsProviderIdInput.value; const provider = this.state.settings.providers.find(p => p.id === providerId); if (!provider || !provider.apiKey) { this._showError("Provider/API Key missing."); this.dom.allProviderModelsList.innerHTML = '<li>Error: Provider/API Key missing.</li>'; return; } this.dom.updateModelsListBtn.disabled = true; this.dom.updateModelsListBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...'; this.dom.allProviderModelsList.innerHTML = '<li>Fetching models...</li>'; this.dom.modelsComparisonInfo.innerHTML = ''; try { const response = await fetch(`${provider.baseUrl}/models`, { headers: { 'Authorization': `Bearer ${provider.apiKey}` } }); if (!response.ok) { const errorData = await response.json().catch(() => null); const errorMsg = errorData?.error?.message || response.statusText; throw new Error(`API Error (${response.status}): ${errorMsg}`); } const fetchedData = await response.json(); const fetchedModels = fetchedData.data || []; if (!Array.isArray(fetchedModels)) throw new Error("Invalid model list format."); fetchedModels.sort((a, b) => a.id.localeCompare(b.id)); provider.lastUpdatedModels = Date.now(); this.dom.modelsLastUpdatedStatus.textContent = `Last updated: ${this._formatTimestamp(provider.lastUpdatedModels)}`; const currentModelIds = Object.keys(provider.models || {}); const fetchedModelIds = fetchedModels.map(m => m.id); const newModels = fetchedModelIds.filter(id => !currentModelIds.includes(id)); const removedModels = currentModelIds.filter(id => !fetchedModelIds.includes(id) && (provider.models[id]?.source === 'api')); let comparisonHTML = ''; if (newModels.length > 0) comparisonHTML += `<p>New: ${newModels.map(id => `<span class="new-model">${id}</span>`).join(', ')}</p>`; if (removedModels.length > 0) comparisonHTML += `<p>Removed by provider: ${removedModels.map(id => `<span class="removed-model">${id}</span>`).join(', ')}</p>`; this.dom.modelsComparisonInfo.innerHTML = comparisonHTML || "<p>Model list up-to-date.</p>"; this.dom.allProviderModelsList.innerHTML = ''; if (fetchedModels.length === 0) { this.dom.allProviderModelsList.innerHTML = '<li>No models from provider.</li>'; } else { fetchedModels.forEach(modelData => { const modelId = modelData.id; const li = document.createElement('li'); li.innerHTML = `<span>${modelId}</span><div class="model-actions"><label><input type="checkbox" data-model-id="${modelId}" data-action="add-to-active" ${provider.models[modelId]?.active ? 'checked' : ''}> Add to Configured</label></div>`; this.dom.allProviderModelsList.appendChild(li); if (!provider.models[modelId]) { provider.models[modelId] = { id: modelId, active: false, favorite: false, source: 'api' }; } else { provider.models[modelId].source = 'api'; } }); } this.dom.allProviderModelsList.querySelectorAll('input[type="checkbox"][data-action="add-to-active"]').forEach(checkbox => { checkbox.addEventListener('change', (e) => { const modelId = e.target.dataset.modelId; const currentProvider = this.state.settings.providers.find(p => p.id === providerId); if (!currentProvider.models[modelId]) { currentProvider.models[modelId] = { id: modelId, active: false, favorite: false }; } currentProvider.models[modelId].active = e.target.checked; this._renderConfiguredModelsList(currentProvider); }); }); this.saveSettings(); this._showToast("Model list updated."); } catch (error) { this.dom.allProviderModelsList.innerHTML = `<li>Error: ${error.message}</li>`; this._showError(`Failed to fetch models: ${error.message}`); } finally { this.dom.updateModelsListBtn.disabled = false; this.dom.updateModelsListBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Update Models List'; } },
     handleSaveManagedModels: function () { this.saveSettings(); this._closeModal(this.dom.manageModelsModal); this._showToast("Model config saved."); },
+
+    handleManualAddModel: function() {
+        const providerId = this.dom.manageModelsProviderIdInput.value;
+        const provider = this.state.settings.providers.find(p => p.id === providerId);
+        if (!provider) {
+            this._showError("No provider selected.");
+            return;
+        }
+
+        const modelId = this.dom.manualModelIdInput.value.trim();
+        if (!modelId) {
+            this._showError("Model ID cannot be empty.");
+            return;
+        }
+
+        if (provider.models && provider.models[modelId]) {
+            this._showError(`Model "${modelId}" already exists for this provider.`);
+            return;
+        }
+
+        if (confirm(`Are you sure you want to manually add the model "${modelId}"?`)) {
+            if (!provider.models) {
+                provider.models = {};
+            }
+            provider.models[modelId] = {
+                id: modelId,
+                active: true,
+                favorite: false,
+                source: 'manual'
+            };
+            this.saveSettings();
+            this._renderConfiguredModelsList(provider);
+            this.dom.manualModelIdInput.value = '';
+            this._showToast(`Model "${modelId}" added successfully.`);
+        }
+    },
     _getStore: function (storeName, mode = 'readonly') { if (!this.state.db) throw new Error("DB not init."); return this.state.db.transaction(storeName, mode).objectStore(storeName); },
     addChat: function (chatData) { return new Promise((resolve, reject) => { const store = this._getStore('chats', 'readwrite'); const request = store.add(chatData); request.onsuccess = e => resolve(e.target.result); request.onerror = e => reject(e.target.error); }); },
     getChat: function (chatId) { return new Promise((resolve, reject) => { const store = this._getStore('chats'); const request = store.get(chatId); request.onsuccess = e => resolve(e.target.result); request.onerror = e => reject(e.target.error); }); },
