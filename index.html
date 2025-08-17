@@ -18,8 +18,8 @@
         <!-- Left Sidebar -->
         <aside id="left-sidebar" class="sidebar left-sidebar">
             <div class="sidebar-header">
-                <button id="new-chat-btn" class="btn icon-btn" title="New Chat"><i class="fas fa-plus"></i><span class="btn-text"> New Chat</span></button>
                 <button id="toggle-left-sidebar-btn" class="btn icon-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
+                <button id="new-chat-btn" class="btn icon-btn" title="New Chat"><i class="fas fa-pen-to-square"></i></button>
             </div>
             <div id="left-sidebar-search-container" class="sidebar-section">
                 <input type="text" id="chat-search-input" placeholder="Search chats...">
@@ -51,8 +51,7 @@
                 </div>
             </nav>
             <div class="sidebar-footer">
-                <button id="settings-btn" class="btn icon-btn" title="Settings"><i class="fas fa-cog"></i><span class="btn-text">
-                    Settings</span></button>
+                <button id="settings-btn" class="btn icon-btn" title="Settings"><i class="fas fa-cog"></i></button>
             </div>
         </aside>
 
@@ -134,9 +133,15 @@
                     <input type="range" id="top-p" min="0" max="1" step="0.01" value="1.0">
                 </div>
                 <div class="form-group">
+                    <label for="stream-output-checkbox">
+                        <input type="checkbox" id="stream-output-checkbox" checked> Stream Output
+                    </label>
+                </div>
+                <div class="form-group">
                     <label><input type="checkbox" id="reasoning-effort-checkbox"> Reasoning Effort</label>
                     <select id="reasoning-effort-select" disabled>
                         <option value="none">None</option>
+                        <option value="default">Default</option>
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
@@ -163,7 +168,7 @@
                     <button class="tab-link" data-tab="providers-settings">Providers & Models</button>
                     <button class="tab-link" data-tab="system-prompts-settings">System Prompts</button>
                     <button class="tab-link" data-tab="chats-settings">Chats</button>
-                    <button class="tab-link" data-tab="history-settings">History</button>
+                    
                     <button class="tab-link" data-tab="about-settings">About</button>
                 </div>
 
@@ -259,23 +264,7 @@
                         <button id="delete-folder-btn" class="btn btn-danger" disabled><i class="fas fa-trash-alt"></i> Delete Selected</button>
                     </div>
                     <hr>
-                    <!-- Future: Assign chat to folder section -->
-
-                    <hr style="margin-top: 20px; margin-bottom: 20px;">
-
-                    <h3>Chat Data Management</h3>
-                    <div class="form-group">
-                        <button id="export-all-chats-btn" class="btn"><i class="fas fa-file-export"></i> Export All Chats</button>
-                    </div>
-                    <div class="form-group">
-                        <button id="import-chats-btn" class="btn"><i class="fas fa-file-import"></i> Import Chats</button>
-                        <input type="file" id="import-chats-file-input" accept=".json" style="display: none;">
-                    </div>
-                </div>
-
-                <div id="history-settings" class="tab-content">
-                    <h3>History Management</h3>
-                    <p>Manage your chat history here.</p>
+                    <!-- Moved from History Tab -->
                     <div class="form-group">
                         <label for="export-chat-format">Export Current Chat Format:</label>
                         <select id="export-chat-format">
@@ -284,23 +273,27 @@
                         </select>
                     </div>
                     <button id="export-current-chat-btn" class="btn"><i class="fas fa-download"></i> Export Current Chat</button>
-                    <!-- <button id="export-history-btn" class="btn" title="Feature for future version"><i
-                            class="fas fa-download"></i> Export All History (Not Implemented)</button> -->
-                    <button id="clear-all-history-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Clear All
-                        History</button>
-                    <div id="settings-chat-list-container">
-                        <h4>Saved Chats:</h4>
-                        <ul id="settings-chat-list">
-                            <!-- Chat items for deletion will be populated here -->
-                        </ul>
+                    <hr style="margin-top: 20px; margin-bottom: 20px;">
+                    <h3>Chat Data Management</h3>
+                    <div class="form-group">
+                        <button id="export-all-chats-btn" class="btn"><i class="fas fa-file-export"></i> Export All Chats</button>
+                    </div>
+                    <div class="form-group">
+                        <button id="import-chats-btn" class="btn"><i class="fas fa-file-import"></i> Import Chats</button>
+                        <input type="file" id="import-chats-file-input" accept=".json" style="display: none;">
+                    </div>
+                    <div class="form-group">
+                        <button id="clear-all-history-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Clear All History</button>
                     </div>
                 </div>
+
+                
 
                 <div id="about-settings" class="tab-content">
                     <h3>About GrokChat</h3>
                     <p>GrokChat is an open-source project. You can find the source code and contribute on <a
                             href="http://github.com/OleksiyM/grokchat" target="_blank">GitHub</a>.</p>
-                    <p>Version: 0.1.14</p>
+                    <p>Version: 0.1.15</p>
                 </div>
 
             </div>
@@ -362,6 +355,10 @@
                     </div>
                     <div id="active-models-tab" class="tab-content active">
                         <h4>Currently Configured Models:</h4>
+                        <div class="form-group manual-add-model">
+                            <input type="text" id="manual-model-id-input" placeholder="Manually add model ID">
+                            <button id="manual-add-model-btn" class="btn btn-sm"><i class="fas fa-plus"></i> Add</button>
+                        </div>
                         <ul id="current-provider-models-list"></ul>
                         <small>Mark models as "active" to appear in chat selection. Mark as "favorite" for quick access.
                             Check "Images" if model supports vision.</small>
