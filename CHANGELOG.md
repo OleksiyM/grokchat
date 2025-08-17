@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.15]
+### Added
+- "Stream output" switch in the right sidebar to control streaming per chat.
+- Ability to manually add a model in the "Manage Models" modal with a confirmation dialog.
+- "Default" option to the "Reasoning Effort" dropdown.
+
+### Changed
+- "New Chat" button icon to a more recognizable `fa-pen-to-square`.
+- "New Chat" and "Settings" buttons are now icon-only for a cleaner look.
+- Reorganized "Settings" modal by merging the "History" tab into the "Chats" tab.
+
+### Fixed
+- Parsing of non-streaming/buffered responses from certain models.
+- UI bug where message action buttons (Copy, Edit, etc.) would not fit on mobile screens.
+- UI bug where the "New Chat" button would disappear on smaller screens when the sidebar was expanded.
+- UI layout of left sidebar header buttons in collapsed mode to prevent crowding.
+- JavaScript error when opening settings after the "History" tab was removed.
+
+### Improved
+- The list of models fetched from a provider is now sorted alphabetically.
+
 ## [0.1.14]
 
 - Feat: Replace prompt with modal for renaming chat titles
@@ -118,4 +139,3 @@
 - Streaming responses not implemented (already implemented in later version)
 - Potential formatting issues with complex markdown (partially resolved)
 - Layout may have issues on certain devices (partially resolved)
-
