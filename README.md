@@ -4,7 +4,7 @@
 
 [![GrokChat Logo](https://img.shields.io/badge/GrokChat-Web%20Client-blue)](https://grokchat.pages.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.14-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.1.15-orange)](CHANGELOG.md)
 
 </div>
 
@@ -22,6 +22,8 @@ A lightweight, browser-based chat interface for interacting with various AI prov
   - Adjust context window size
   - Choose between light, dark, or system theme
   - Save and manage multiple system prompts with dropdown selection
+  - Toggle streaming responses on a per-chat basis
+  - Manually add custom models to a provider
 - **Rich Content Rendering**:
   - Markdown support with syntax highlighting for code blocks
   - Support for AI thinking process visualization
@@ -104,8 +106,8 @@ To manage system prompts:
 ### Managing Chats Messages
 
 - **Delete Any Message**: Click the trash icon next to any message to remove it from the chat history.
-- **Clear All History**: Go to Settings > History tab > "Clear All History"
-- **Export Chat**: Go to Settings > History tab > "Export Chat"
+- **Clear All History**: Go to Settings > Chats tab > "Clear All History"
+- **Export Chat**: Go to Settings > Chats tab > "Export Chat"
 
 ### Chat Organization Features
 - **Folder Management**: Organize chats into custom folders (System 'Default' folder is protected)
@@ -125,7 +127,7 @@ To manage system prompts:
 - **Copy Current Chat**: Quickly duplicate your current conversation with all messages and settings using the "Copy Chat" button in the chat header
 - **Unlimited Context**: Enable in General Settings to bypass default context window limits (may increase API costs)
 - **Data Export/Import**:
-  - Export/Import chat history (Settings > History tab)
+  - Export/Import chat history (Settings > Chats tab)
   - Export/Import application settings (Settings > General tab)
 - **Information about Response**: Mouse hover over the info icon next to a message. You will see the technical details of the response.
 ```text
@@ -164,9 +166,9 @@ API keys are stored in your browser's `localStorage`. While this keeps your keys
 - The application requires a modern browser with support for IndexedDB, Service Workers, and ES Modules
 - OpenAI API compatibility is assumed for chat completions (`/v1/chat/completions`) and model listing (`/v1/models`)
 - Current limitations:
-  - Streaming responses are not implemented in this version
+  - Streaming responses are supported and can be toggled per-chat
   - Some formatting issues may occur with complex markdown
-  - Layout may have issues on certain devices
+  - Layout may have issues on certain devices (work in progress)
 
 ## Contributing
 
