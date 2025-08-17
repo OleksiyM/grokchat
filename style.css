@@ -130,9 +130,7 @@ body {
 }
 
 /* Styles for elements inside collapsed left sidebar */
-.left-sidebar.collapsed .btn .btn-text { /* Hides text in buttons like "New Chat", "Settings" */
-    display: none;
-}
+
 
 .left-sidebar.collapsed .btn i { /* Ensures icon has no extra margin when text is hidden */
     margin-right: 0; 
@@ -174,6 +172,17 @@ body {
 .left-sidebar.collapsed #chat-list li {
     justify-content: center; /* Center content if any (e.g., a future icon) */
     padding: 10px 0; /* Adjust padding for aesthetic appeal when collapsed */
+}
+
+.left-sidebar.collapsed #left-sidebar-search-container,
+.left-sidebar.collapsed #left-sidebar-nav-container {
+    display: none;
+}
+
+.left-sidebar.collapsed .sidebar-header {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 10px;
 }
 
 
@@ -1139,11 +1148,7 @@ html.dark-theme .message-actions button:hover {
     font-size: 1.3em;
 }
 
-.sidebar-header .icon-btn,
-.sidebar-footer .icon-btn {
-    width: 100%;
-    justify-content: flex-start; /* Align icon and text to the left */
-}
+
 
 .left-sidebar.collapsed .sidebar-header .icon-btn,
 .left-sidebar.collapsed .sidebar-footer .icon-btn {
@@ -1261,7 +1266,7 @@ html.dark-theme .message-actions button:hover {
         overflow: hidden; /* Important to hide contents fully */
     }
 
-    #toggle-left-sidebar-btn {
+    .left-sidebar.collapsed #toggle-left-sidebar-btn {
         /* This button is inside .left-sidebar .sidebar-header */
         /* When sidebar is collapsed (width:0, overflow:hidden), this button is also hidden unless taken out of flow */
         /* The JS likely handles visibility or moves this button. If fixed, ensure it's outside the overflow:hidden parent or manage via JS */
@@ -1327,6 +1332,10 @@ html.dark-theme .message-actions button:hover {
 
     #chat-title-display,
     #chat-current-provider-model {
+        display: none;
+    }
+
+    .message-actions .btn-text {
         display: none;
     }
 }
