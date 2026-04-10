@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.16]
+### Fixed
+- Mobile UI bug where the sidebar was positioned off the top of the screen (thanks to @AntonBogun).
+- Replaced `100vh` with `100dvh` for better mobile browser support.
+
 ## [0.1.15]
 ### Added
 - "Stream output" switch in the right sidebar to control streaming per chat.
